@@ -1,0 +1,72 @@
+# DRP Common 模块配置文件
+# 此文件为示例配置，实际使用时应被各微服务模块的配置覆盖
+
+spring:
+  application:
+    name: drp-common
+
+  # Redis 配置
+  redis:
+    host: localhost
+    port: 6379
+    password: 1Q2w3e4r!
+    database: 0
+    timeout: 5000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+        max-wait: -1ms
+
+  # Jackson 配置
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+    serialization:
+      write-dates-as-timestamps: false
+
+# MyBatis Plus 配置
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: com.drp.*.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: false
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+# DRP 平台配置
+drp:
+  # JWT 配置
+  jwt:
+    secret: dHJ1c3RlZF9zZWNyZXRfa2V5X2Zvcl9kcnBfcGxhdGZvcm0=
+    expire: 7200
+    refresh-expire: 604800
+
+  # 加密配置
+  encrypt:
+    key: dHJ1c3RlZF9rZXlfZm9yX2RycF9wbGF0Zm9ybQ==
+
+  # 文件上传配置
+  upload:
+    max-size: 104857600  # 100MB
+    allowed-extensions: jar,war,zip,tar.gz
+
+  # 构建配置
+  build:
+    workspace: /opt/drp/workspace
+    artifact-path: /opt/drp/artifacts
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    com.drp: DEBUG
+  pattern:
+    console: '%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n'
