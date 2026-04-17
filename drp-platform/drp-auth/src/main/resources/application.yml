@@ -1,0 +1,133 @@
+# =====================================================
+# DRP 认证服务配置文件
+# =====================================================
+# 本配置文件包含数据库、Redis、JWT等核心配置
+# 生产环境请通过环境变量或配置中心覆盖敏感配置
+# =====================================================
+
+server:
+  # 服务端口
+  port: 8081
+  # 服务名称
+  application:
+    name: drp-auth
+  # Servlet 配置
+  servlet:
+    context-path: /
+  # Tomcat 配置
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 10
+    accept-count: 100
+    max-connections: 10000
+
+# =====================================================
+# Spring Boot 通用配置
+# =====================================================
+spring:
+  application:
+    name: drp-auth
+
+  # 数据源配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/drp?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: 1q2w3e4r
+    # 连接池配置
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      idle-timeout: 30000
+      connection-timeout: 30000
+      max-lifetime: 1800000
+      pool-name: DRP-Auth-HikariCP
+
+  # Redis 配置
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: 1Q2w3e4r!
+      database: 0
+      timeout: 5000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 2
+          max-wait: -1ms
+
+  # Jackson 配置
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+    serialization:
+      write-dates-as-timestamps: false
+
+# =====================================================
+# MyBatis Plus 配置
+# =====================================================
+mybatis-plus:
+  # Mapper XML 文件路径
+  mapper-locations: classpath*:/mapper/**/*.xml
+  # 实体扫描路径
+  type-aliases-package: com.drp.auth.entity
+  # 全局配置
+  global-config:
+    db-config:
+      # 主键类型: AUTO-自增, INPUT-手动输入, ID_WORKER-雪花ID
+      id-type: AUTO
+      # 逻辑删除字段
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+  configuration:
+    # 开启下划线转驼峰
+    map-underscore-to-camel-case: true
+    # 日志输出
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+
+# =====================================================
+# JWT 配置
+# =====================================================
+jwt:
+  # JWT 密钥 (Base64编码的256位密钥)
+  # 生产环境必须通过环境变量覆盖
+  secret: ZHJwX3BsYXRmb3JtX3NlY3JldF9rZXlfZm9yX2p3dF90b2tlbl9nZW5lcmF0aW9uXzI1Nl9iaXRz
+  # Access Token 过期时间 (毫秒) - 15分钟
+  expiration-ms: 900000
+  # Refresh Token 过期时间 (毫秒) - 7天
+  refresh-expiration-ms: 604800000
+
+# =====================================================
+# 日志配置
+# =====================================================
+logging:
+  level:
+    # 日志级别
+    root: INFO
+    com.drp: DEBUG
+    com.drp.auth: DEBUG
+    org.springframework.security: INFO
+  # 日志格式
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+  # 日志文件
+  file:
+    name: logs/drp-auth.log
+    max-size: 10MB
+    max-history: 30
+
+# =====================================================
+# Actuator 配置 (生产环境应限制)
+# =====================================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
