@@ -1,0 +1,31 @@
+{
+  "name": "drp-ui",
+  "version": "1.0.0",
+  "description": "DRP DevOps Platform Frontend",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc && vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix",
+    "format": "prettier --write src/"
+  },
+  "dependencies": {
+    "vue": "^3.4.21",
+    "vue-router": "^4.3.0",
+    "pinia": "^2.1.7",
+    "axios": "^1.6.8",
+    "element-plus": "^2.5.6",
+    "@element-plus/icons-vue": "^2.3.1",
+    "dayjs": "^1.11.10",
+    "ansidec": "^0.3.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.0.4",
+    "vite": "^5.2.0",
+    "typescript": "^5.4.0",
+    "vue-tsc": "^2.0.6",
+    "sass": "^1.72.0",
+    "@types/node": "^20.11.30"
+  }
+}
