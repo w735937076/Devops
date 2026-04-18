@@ -108,7 +108,8 @@ async function handleTokenExpired(originalConfig: RequestConfig): Promise<any> {
 
       // 调用刷新接口
       const res = await axios.post('/api/auth/refresh', { refreshToken })
-      const { accessToken, refreshToken: newRefreshToken } = res.data
+      // 后端返回格式: { code, message, data: { accessToken, refreshToken, ... } }
+      const { accessToken, refreshToken: newRefreshToken } = res.data.data
 
       // 更新本地存储
       localStorage.setItem('accessToken', accessToken)

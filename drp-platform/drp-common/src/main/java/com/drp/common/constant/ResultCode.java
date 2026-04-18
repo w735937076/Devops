@@ -116,14 +116,15 @@ public enum ResultCode {
 
     // ==================== 业务错误码 - 系统模块 (8000+) ====================
     USER_ALREADY_EXISTS(8001, "用户已存在"),
-    ROLE_NOT_FOUND(8002, "角色不存在"),
-    ROLE_EXISTS(8003, "角色已存在"),
-    PERMISSION_NOT_FOUND(8004, "权限不存在"),
-    PERMISSION_DENIED(8005, "权限不足"),
-    CONFIG_NOT_FOUND(8006, "配置不存在"),
-    CONFIG_UPDATE_FAILED(8007, "配置更新失败"),
-    SYSTEM_BUSY(8008, "系统繁忙，请稍后重试"),
-    MAINTENANCE_MODE(8009, "系统正在维护中");
+    USERNAME_EXISTS(8002, "用户名已存在"),
+    ROLE_NOT_FOUND(8003, "角色不存在"),
+    ROLE_EXISTS(8004, "角色已存在"),
+    PERMISSION_NOT_FOUND(8005, "权限不存在"),
+    PERMISSION_DENIED(8006, "权限不足"),
+    CONFIG_NOT_FOUND(8007, "配置不存在"),
+    CONFIG_UPDATE_FAILED(8008, "配置更新失败"),
+    SYSTEM_BUSY(8009, "系统繁忙，请稍后重试"),
+    MAINTENANCE_MODE(8010, "系统正在维护中");
 
     /**
      * 状态码
