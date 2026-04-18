@@ -120,6 +120,7 @@ public enum ResultCode {
     ROLE_NOT_FOUND(8003, "角色不存在"),
     ROLE_EXISTS(8004, "角色已存在"),
     PERMISSION_NOT_FOUND(8005, "权限不存在"),
+    PERMISSION_EXISTS(8011, "权限已存在"),
     PERMISSION_DENIED(8006, "权限不足"),
     CONFIG_NOT_FOUND(8007, "配置不存在"),
     CONFIG_UPDATE_FAILED(8008, "配置更新失败"),

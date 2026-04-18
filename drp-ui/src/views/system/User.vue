@@ -27,7 +27,7 @@
     </div>
 
     <div class="card-container">
-      <el-table v-loading="loading" :data="tableData" stripe>
+      <el-table v-loading="loading" :data="tableData" stripe class="user-table">
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="username" label="用户名" min-width="120" />
         <el-table-column prop="realName" label="真实姓名" min-width="100" />
@@ -321,14 +321,18 @@ onMounted(() => {
 
 <style scoped>
 .page-container {
-  padding: 20px;
+  height: calc(100vh - 60px - 44px - 40px);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .page-header {
+  flex-shrink: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 15px;
 }
 
 .page-title {
@@ -338,8 +342,9 @@ onMounted(() => {
 }
 
 .search-form {
+  flex-shrink: 0;
   background: #fff;
-  padding: 20px;
+  padding: 16px 20px;
   border-radius: 4px;
   margin-bottom: 15px;
 }
@@ -349,14 +354,33 @@ onMounted(() => {
 }
 
 .card-container {
+  flex: 1;
   background: #fff;
   padding: 20px;
   border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.user-table {
+  flex: 1;
+  overflow-y: auto;
+}
+
+:deep(.el-table__body-wrapper) {
+  overflow-y: auto;
+}
+
+:deep(.el-table__body) {
+  display: table-row-group;
 }
 
 .pagination-container {
+  flex-shrink: 0;
   display: flex;
   justify-content: flex-end;
-  margin-top: 20px;
+  padding-top: 16px;
 }
 </style>

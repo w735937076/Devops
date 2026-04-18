@@ -5,9 +5,11 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.drp.auth.dto.*;
 import com.drp.auth.entity.SysPermission;
 import com.drp.auth.entity.SysRole;
+import com.drp.auth.entity.SysRolePermission;
 import com.drp.auth.entity.SysUserRole;
 import com.drp.auth.exception.AuthException;
 import com.drp.auth.repository.SysPermissionRepository;
+import com.drp.auth.repository.SysRolePermissionRepository;
 import com.drp.auth.repository.SysRoleRepository;
 import com.drp.auth.repository.SysUserRoleRepository;
 import com.drp.auth.service.RoleService;
@@ -38,6 +40,9 @@ public class RoleServiceImpl implements RoleService {
 
     @Autowired
     private SysPermissionRepository sysPermissionRepository;
+
+    @Autowired
+    private SysRolePermissionRepository sysRolePermissionRepository;
 
     @Autowired
     private SysUserRoleRepository sysUserRoleRepository;
@@ -196,16 +201,25 @@ public class RoleServiceImpl implements RoleService {
     @Transactional
     public void assignPermissions(Long roleId, List<Long> permissionIds) {
         log.info("分配权限 | roleId: {} | permissionIds: {}", roleId, permissionIds);
-        // 权限分配的具体实现取决于你的权限表结构
-        // 这里需要根据实际的权限关联表来实现
+
+        // 删除现有权限关联
+        sysRolePermissionRepository.deleteByRoleId(roleId);
+
+        // 添加新权限关联
+        if (permissionIds != null && !permissionIds.isEmpty()) {
+            for (Long permissionId : permissionIds) {
+                SysRolePermission rp = new SysRolePermission(roleId, permissionId);
+                sysRolePermissionRepository.insert(rp);
+            }
+        }
+
         log.info("分配权限成功 | roleId: {}", roleId);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<Long> getPermissionIds(Long roleId) {
-        // 获取角色权限ID列表的具体实现
-        return new ArrayList<>();
+        return sysRolePermissionRepository.findPermissionIdsByRoleId(roleId);
     }
 
     private RoleDTO buildRoleDTO(SysRole role) {

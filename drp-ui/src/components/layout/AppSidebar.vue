@@ -130,7 +130,8 @@ const menuList: MenuItem[] = [
     icon: 'Setting',
     children: [
       { path: '/system/users', title: '用户管理', icon: 'User' },
-      { path: '/system/roles', title: '角色管理', icon: 'Key' }
+      { path: '/system/roles', title: '角色管理', icon: 'Key' },
+      { path: '/system/permissions', title: '权限管理', icon: 'Lock' }
     ]
   }
 ]

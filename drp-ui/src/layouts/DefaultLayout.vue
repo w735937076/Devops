@@ -101,7 +101,7 @@ const sidebarWidth = computed(() => appStore.sidebarWidth)
 
 .el-main {
   padding: 20px;
-  overflow-y: auto;
+  overflow: hidden;
   background: #f5f7fa;
 
   // 滚动条样式

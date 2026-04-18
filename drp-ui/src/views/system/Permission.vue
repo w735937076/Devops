@@ -1,17 +1,24 @@
 <template>
   <div class="page-container">
     <div class="page-header">
-      <h2 class="page-title">角色管理</h2>
-      <el-button type="primary" @click="handleCreate">添加角色</el-button>
+      <h2 class="page-title">权限管理</h2>
+      <el-button type="primary" @click="handleCreate">添加权限</el-button>
     </div>
 
     <div class="search-form">
       <el-form :inline="true" :model="queryParams" class="search-form-inline">
-        <el-form-item label="角色编码">
-          <el-input v-model="queryParams.code" placeholder="请输入角色编码" clearable @keyup.enter="handleQuery" />
+        <el-form-item label="权限编码">
+          <el-input v-model="queryParams.code" placeholder="请输入权限编码" clearable @keyup.enter="handleQuery" />
         </el-form-item>
-        <el-form-item label="角色名称">
-          <el-input v-model="queryParams.name" placeholder="请输入角色名称" clearable @keyup.enter="handleQuery" />
+        <el-form-item label="权限名称">
+          <el-input v-model="queryParams.name" placeholder="请输入权限名称" clearable @keyup.enter="handleQuery" />
+        </el-form-item>
+        <el-form-item label="类型">
+          <el-select v-model="queryParams.type" placeholder="请选择类型" clearable style="width: 150px">
+            <el-option label="菜单" value="MENU" />
+            <el-option label="按钮" value="BUTTON" />
+            <el-option label="API" value="API" />
+          </el-select>
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 150px">
@@ -27,17 +34,17 @@
     </div>
 
     <div class="card-container">
-      <el-table v-loading="loading" :data="tableData" stripe class="role-table">
-        <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="code" label="角色编码" min-width="120" />
-        <el-table-column prop="name" label="角色名称" min-width="120" />
-        <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
+      <el-table v-loading="loading" :data="tableData" stripe default-expand-all row-key="id" class="permission-table">
+        <el-table-column prop="code" label="权限编码" min-width="150" />
+        <el-table-column prop="name" label="权限名称" min-width="150" />
         <el-table-column prop="type" label="类型" width="100">
           <template #default="{ row }">
-            <el-tag v-if="row.type === 'SYSTEM'" type="warning">系统</el-tag>
-            <el-tag v-else type="info">自定义</el-tag>
+            <el-tag v-if="row.type === 'MENU'" type="success">菜单</el-tag>
+            <el-tag v-else-if="row.type === 'BUTTON'" type="warning">按钮</el-tag>
+            <el-tag v-else type="info">API</el-tag>
           </template>
         </el-table-column>
+        <el-table-column prop="path" label="路径" min-width="180" show-overflow-tooltip />
         <el-table-column prop="sort" label="排序" width="80" />
         <el-table-column prop="status" label="状态" width="100">
           <template #default="{ row }">
@@ -46,11 +53,10 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" min-width="180" />
-        <el-table-column label="操作" width="280" fixed="right">
+        <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
+        <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="handleEdit(row)">编辑</el-button>
-            <el-button link type="primary" @click="handleAssignPermissions(row)">权限</el-button>
             <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
@@ -69,20 +75,38 @@
       </div>
     </div>
 
-    <!-- 创建/编辑角色对话框 -->
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="500px" @close="handleDialogClose">
+    <!-- 创建/编辑权限对话框 -->
+    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="600px" @close="handleDialogClose">
       <el-form ref="formRef" :model="formData" :rules="formRules" label-width="100px">
-        <el-form-item label="角色编码" prop="code">
-          <el-input v-model="formData.code" :disabled="isEdit" placeholder="请输入角色编码" />
+        <el-form-item label="权限编码" prop="code">
+          <el-input v-model="formData.code" :disabled="isEdit" placeholder="请输入权限编码" />
         </el-form-item>
-        <el-form-item label="角色名称" prop="name">
-          <el-input v-model="formData.name" placeholder="请输入角色名称" />
+        <el-form-item label="权限名称" prop="name">
+          <el-input v-model="formData.name" placeholder="请输入权限名称" />
         </el-form-item>
-        <el-form-item label="描述" prop="description">
-          <el-input v-model="formData.description" type="textarea" :rows="3" placeholder="请输入描述" />
+        <el-form-item label="权限类型" prop="type">
+          <el-select v-model="formData.type" placeholder="请选择权限类型" style="width: 100%">
+            <el-option label="菜单" value="MENU" />
+            <el-option label="按钮" value="BUTTON" />
+            <el-option label="API接口" value="API" />
+          </el-select>
         </el-form-item>
-        <el-form-item label="排序" prop="sort">
+        <el-form-item label="父级权限">
+          <el-select v-model="formData.parentId" placeholder="请选择父级权限" clearable style="width: 100%">
+            <el-option v-for="perm in flatPermissions" :key="perm.id" :label="perm.name" :value="perm.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="路径">
+          <el-input v-model="formData.path" placeholder="请输入路由路径" />
+        </el-form-item>
+        <el-form-item label="组件">
+          <el-input v-model="formData.component" placeholder="请输入组件路径" />
+        </el-form-item>
+        <el-form-item label="排序">
           <el-input-number v-model="formData.sort" :min="0" :max="9999" />
+        </el-form-item>
+        <el-form-item label="描述">
+          <el-input v-model="formData.description" type="textarea" :rows="2" placeholder="请输入描述" />
         </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-radio-group v-model="formData.status">
@@ -96,23 +120,6 @@
         <el-button type="primary" @click="handleSubmit">确定</el-button>
       </template>
     </el-dialog>
-
-    <!-- 分配权限对话框 -->
-    <el-dialog v-model="permissionDialogVisible" title="分配权限" width="600px">
-      <el-tree
-        ref="permissionTreeRef"
-        :data="permissionTree"
-        :props="{ label: 'name', children: 'children' }"
-        node-key="id"
-        :check-strictly="false"
-        show-checkbox
-        default-expand-all
-      />
-      <template #footer>
-        <el-button @click="permissionDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSubmitPermissions">确定</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
@@ -120,21 +127,41 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
-import type { ElTree } from 'element-plus'
-import { queryRoles, createRole, updateRole, deleteRole, assignRolePermissions, type Role, type CreateRoleRequest, type UpdateRoleRequest } from '@/api/role'
-import { getPermissionTree, getPermissionIdsByRoleId, type Permission } from '@/api/permission'
+import {
+  queryPermissions,
+  createPermission,
+  updatePermission,
+  deletePermission,
+  getAllPermissions,
+  type Permission,
+  type CreatePermissionRequest,
+  type UpdatePermissionRequest
+} from '@/api/permission'
 
 // 表格数据
 const loading = ref(false)
-const tableData = ref<Role[]>([])
+const tableData = ref<Permission[]>([])
+const flatPermissions = ref<Permission[]>([])
 const total = ref(0)
+
+// 分页
+function handleSizeChange(size: number) {
+  queryParams.size = size
+  loadData()
+}
+
+function handlePageChange(page: number) {
+  queryParams.page = page
+  loadData()
+}
 
 // 查询参数
 const queryParams = reactive({
   page: 1,
-  size: 10,
+  size: 100,
   code: '',
   name: '',
+  type: '',
   status: undefined as number | undefined
 })
 
@@ -142,47 +169,56 @@ const queryParams = reactive({
 const dialogVisible = ref(false)
 const isEdit = ref(false)
 const formRef = ref<FormInstance>()
-const formData = reactive<CreateRoleRequest | UpdateRoleRequest>({
+const formData = reactive<CreatePermissionRequest | UpdatePermissionRequest>({
   code: '',
   name: '',
   description: '',
+  parentId: undefined,
+  type: 'API',
   sort: 0,
+  icon: '',
+  path: '',
+  component: '',
   status: 1
 })
 
 const formRules: FormRules = {
   code: [
-    { required: true, message: '请输入角色编码', trigger: 'blur' },
-    { min: 2, max: 50, message: '角色编码长度为2-50个字符', trigger: 'blur' }
+    { required: true, message: '请输入权限编码', trigger: 'blur' }
   ],
   name: [
-    { required: true, message: '请输入角色名称', trigger: 'blur' }
+    { required: true, message: '请输入权限名称', trigger: 'blur' }
+  ],
+  type: [
+    { required: true, message: '请选择权限类型', trigger: 'change' }
   ]
 }
 
-// 分配权限对话框
-const permissionDialogVisible = ref(false)
-const permissionTreeRef = ref<InstanceType<typeof ElTree>>()
-const permissionTree = ref<Permission[]>([])
-const currentRoleId = ref<number>()
-const currentRoleName = ref('')
-
 // 计算对话框标题
 const dialogTitle = computed(() => {
-  return isEdit.value ? '编辑角色' : '添加角色'
+  return isEdit.value ? '编辑权限' : '添加权限'
 })
 
 // 加载表格数据
 async function loadData() {
   loading.value = true
   try {
-    const res = await queryRoles(queryParams)
+    const res = await queryPermissions(queryParams)
     tableData.value = res.records
     total.value = res.total
   } catch (error) {
-    console.error('加载角色列表失败:', error)
+    console.error('加载权限列表失败:', error)
   } finally {
     loading.value = false
+  }
+}
+
+// 加载扁平权限列表（用于父级选择）
+async function loadFlatPermissions() {
+  try {
+    flatPermissions.value = await getAllPermissions()
+  } catch (error) {
+    console.error('加载权限列表失败:', error)
   }
 }
 
@@ -196,19 +232,9 @@ function handleQuery() {
 function handleReset() {
   queryParams.code = ''
   queryParams.name = ''
+  queryParams.type = ''
   queryParams.status = undefined
   queryParams.page = 1
-  loadData()
-}
-
-// 分页
-function handleSizeChange(size: number) {
-  queryParams.size = size
-  loadData()
-}
-
-function handlePageChange(page: number) {
-  queryParams.page = page
   loadData()
 }
 
@@ -220,75 +246,37 @@ function handleCreate() {
 }
 
 // 编辑
-function handleEdit(row: Role) {
+function handleEdit(row: Permission) {
   isEdit.value = true
   Object.assign(formData, {
     id: row.id,
     code: row.code,
     name: row.name,
     description: row.description || '',
+    parentId: row.parentId || undefined,
+    type: row.type,
     sort: row.sort || 0,
+    icon: row.icon || '',
+    path: row.path || '',
+    component: row.component || '',
     status: row.status
   })
   dialogVisible.value = true
 }
 
 // 删除
-async function handleDelete(row: Role) {
+async function handleDelete(row: Permission) {
   try {
-    await ElMessageBox.confirm(`确定要删除角色「${row.name}」吗？`, '提示', {
+    await ElMessageBox.confirm(`确定要删除权限「${row.name}」吗？`, '提示', {
       type: 'warning'
     })
-    await deleteRole(row.id)
+    await deletePermission(row.id)
     ElMessage.success('删除成功')
     loadData()
   } catch (error: any) {
     if (error !== 'cancel') {
-      console.error('删除角色失败:', error)
+      console.error('删除权限失败:', error)
     }
-  }
-}
-
-// 分配权限
-async function handleAssignPermissions(row: Role) {
-  currentRoleId.value = row.id
-  currentRoleName.value = row.name
-
-  try {
-    // 加载权限树
-    permissionTree.value = await getPermissionTree()
-
-    // 加载角色当前权限
-    const currentPermissionIds = await getPermissionIdsByRoleId(row.id)
-
-    // 设置选中状态
-    permissionDialogVisible.value = true
-
-    // 等待对话框渲染完成后设置选中
-    setTimeout(() => {
-      if (permissionTreeRef.value) {
-        permissionTreeRef.value.setCheckedKeys(currentPermissionIds)
-      }
-    }, 100)
-  } catch (error) {
-    console.error('加载权限数据失败:', error)
-    ElMessage.error('加载权限数据失败')
-  }
-}
-
-// 提交权限分配
-async function handleSubmitPermissions() {
-  if (!currentRoleId.value || !permissionTreeRef.value) return
-
-  try {
-    // 获取所有选中节点（包括半选中状态）
-    const checkedKeys = permissionTreeRef.value.getCheckedKeys(true)
-    await assignRolePermissions(currentRoleId.value, checkedKeys as number[])
-    ElMessage.success('权限分配成功')
-    permissionDialogVisible.value = false
-  } catch (error) {
-    console.error('分配权限失败:', error)
-    ElMessage.error('分配权限失败')
   }
 }
 
@@ -299,16 +287,16 @@ async function handleSubmit() {
     if (valid) {
       try {
         if (isEdit.value) {
-          await updateRole(formData as UpdateRoleRequest)
+          await updatePermission(formData as UpdatePermissionRequest)
           ElMessage.success('更新成功')
         } else {
-          await createRole(formData as CreateRoleRequest)
+          await createPermission(formData as CreatePermissionRequest)
           ElMessage.success('创建成功')
         }
         dialogVisible.value = false
         loadData()
       } catch (error) {
-        console.error('保存角色失败:', error)
+        console.error('保存权限失败:', error)
       }
     }
   })
@@ -319,7 +307,12 @@ function resetForm() {
   formData.code = ''
   formData.name = ''
   formData.description = ''
+  formData.parentId = undefined
+  formData.type = 'API'
   formData.sort = 0
+  formData.icon = ''
+  formData.path = ''
+  formData.component = ''
   formData.status = 1
 }
 
@@ -332,6 +325,7 @@ function handleDialogClose() {
 // 初始化
 onMounted(() => {
   loadData()
+  loadFlatPermissions()
 })
 </script>
 
@@ -380,7 +374,7 @@ onMounted(() => {
   overflow: hidden;
 }
 
-.role-table {
+.permission-table {
   flex: 1;
   overflow-y: auto;
 }
