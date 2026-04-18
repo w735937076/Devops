@@ -34,7 +34,7 @@ public class RoleController {
      * 创建角色
      */
     @PostMapping
-    @PreAuthorize("hasAuthority('system:role:add')")
+    @PreAuthorize("hasAuthority('ROLE_MANAGE')")
     public Result<RoleDTO> create(@Valid @RequestBody RoleCreateRequest request) {
         log.info("创建角色 | code: {}", request.getCode());
         RoleDTO role = roleService.create(request);
@@ -45,7 +45,7 @@ public class RoleController {
      * 更新角色
      */
     @PutMapping("/{id}")
-    @PreAuthorize("hasAuthority('system:role:edit')")
+    @PreAuthorize("hasAuthority('ROLE_MANAGE')")
     public Result<RoleDTO> update(@PathVariable Long id, @Valid @RequestBody RoleUpdateRequest request) {
         log.info("更新角色 | id: {}", id);
         request.setId(id);
@@ -57,7 +57,7 @@ public class RoleController {
      * 删除角色
      */
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAuthority('system:role:delete')")
+    @PreAuthorize("hasAuthority('ROLE_MANAGE')")
     public Result<Void> delete(@PathVariable Long id) {
         log.info("删除角色 | id: {}", id);
         roleService.delete(id);
@@ -68,7 +68,7 @@ public class RoleController {
      * 根据ID获取角色
      */
     @GetMapping("/{id}")
-    @PreAuthorize("hasAuthority('system:role:view')")
+    @PreAuthorize("hasAuthority('ROLE_MANAGE')")
     public Result<RoleDTO> getById(@PathVariable Long id) {
         RoleDTO role = roleService.getById(id);
         return Result.success(role);
@@ -78,7 +78,7 @@ public class RoleController {
      * 根据编码获取角色
      */
     @GetMapping("/code/{code}")
-    @PreAuthorize("hasAuthority('system:role:view')")
+    @PreAuthorize("hasAuthority('ROLE_MANAGE')")
     public Result<RoleDTO> getByCode(@PathVariable String code) {
         RoleDTO role = roleService.getByCode(code);
         return Result.success(role);
@@ -88,7 +88,7 @@ public class RoleController {
      * 分页查询角色
      */
     @GetMapping
-    @PreAuthorize("hasAuthority('system:role:view')")
+    @PreAuthorize("hasAuthority('ROLE_MANAGE')")
     public Result<PageResponse<RoleDTO>> queryPage(RoleQueryRequest request) {
         PageResponse<RoleDTO> page = roleService.queryPage(request);
         return Result.success(page);
@@ -98,7 +98,7 @@ public class RoleController {
      * 获取所有角色
      */
     @GetMapping("/all")
-    @PreAuthorize("hasAuthority('system:role:view')")
+    @PreAuthorize("hasAuthority('ROLE_MANAGE')")
     public Result<List<RoleDTO>> listAll() {
         List<RoleDTO> roles = roleService.listAll();
         return Result.success(roles);
@@ -108,7 +108,7 @@ public class RoleController {
      * 分配角色权限
      */
     @PutMapping("/{id}/permissions")
-    @PreAuthorize("hasAuthority('system:role:edit')")
+    @PreAuthorize("hasAuthority('ROLE_MANAGE')")
     public Result<Void> assignPermissions(@PathVariable Long id, @RequestBody Map<String, List<Long>> body) {
         log.info("分配权限 | roleId: {} | permissionIds: {}", id, body.get("permissionIds"));
         roleService.assignPermissions(id, body.get("permissionIds"));
@@ -119,7 +119,7 @@ public class RoleController {
      * 获取角色权限ID列表
      */
     @GetMapping("/{id}/permissions")
-    @PreAuthorize("hasAuthority('system:role:view')")
+    @PreAuthorize("hasAuthority('ROLE_MANAGE')")
     public Result<List<Long>> getPermissionIds(@PathVariable Long id) {
         List<Long> permissionIds = roleService.getPermissionIds(id);
         return Result.success(permissionIds);

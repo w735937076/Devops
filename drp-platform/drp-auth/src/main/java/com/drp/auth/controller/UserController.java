@@ -33,7 +33,7 @@ public class UserController {
      * 创建用户
      */
     @PostMapping
-    @PreAuthorize("hasAuthority('system:user:add')")
+    @PreAuthorize("hasAuthority('USER_MANAGE')")
     public Result<UserDTO> create(@Valid @RequestBody UserCreateRequest request) {
         log.info("创建用户 | username: {}", request.getUsername());
         UserDTO user = userService.create(request);
@@ -44,7 +44,7 @@ public class UserController {
      * 更新用户
      */
     @PutMapping("/{id}")
-    @PreAuthorize("hasAuthority('system:user:edit')")
+    @PreAuthorize("hasAuthority('USER_MANAGE')")
     public Result<UserDTO> update(@PathVariable Long id, @Valid @RequestBody UserUpdateRequest request) {
         log.info("更新用户 | id: {}", id);
         request.setId(id);
@@ -56,7 +56,7 @@ public class UserController {
      * 删除用户
      */
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAuthority('system:user:delete')")
+    @PreAuthorize("hasAuthority('USER_MANAGE')")
     public Result<Void> delete(@PathVariable Long id) {
         log.info("删除用户 | id: {}", id);
         userService.delete(id);
@@ -67,7 +67,7 @@ public class UserController {
      * 根据ID获取用户
      */
     @GetMapping("/{id}")
-    @PreAuthorize("hasAuthority('system:user:view')")
+    @PreAuthorize("hasAuthority('USER_MANAGE')")
     public Result<UserDTO> getById(@PathVariable Long id) {
         UserDTO user = userService.getById(id);
         return Result.success(user);
@@ -77,7 +77,7 @@ public class UserController {
      * 分页查询用户
      */
     @GetMapping
-    @PreAuthorize("hasAuthority('system:user:view')")
+    @PreAuthorize("hasAuthority('USER_MANAGE')")
     public Result<PageResponse<UserDTO>> queryPage(UserQueryRequest request) {
         PageResponse<UserDTO> page = userService.queryPage(request);
         return Result.success(page);
@@ -87,7 +87,7 @@ public class UserController {
      * 分配用户角色
      */
     @PutMapping("/{id}/roles")
-    @PreAuthorize("hasAuthority('system:user:edit')")
+    @PreAuthorize("hasAuthority('USER_MANAGE')")
     public Result<Void> assignRoles(@PathVariable Long id, @RequestBody Map<String, java.util.Set<Long>> body) {
         log.info("分配角色 | userId: {} | roleIds: {}", id, body.get("roleIds"));
         userService.assignRoles(id, body.get("roleIds"));
@@ -98,7 +98,7 @@ public class UserController {
      * 修改密码
      */
     @PutMapping("/{id}/password")
-    @PreAuthorize("hasAuthority('system:user:password')")
+    @PreAuthorize("hasAuthority('USER_MANAGE')")
     public Result<Void> changePassword(@PathVariable Long id, @RequestBody Map<String, String> body) {
         log.info("修改密码 | userId: {}", id);
         userService.changePassword(id, body.get("oldPassword"), body.get("newPassword"));
@@ -109,7 +109,7 @@ public class UserController {
      * 重置密码
      */
     @PutMapping("/{id}/reset-password")
-    @PreAuthorize("hasAuthority('system:user:reset-password')")
+    @PreAuthorize("hasAuthority('USER_MANAGE')")
     public Result<Void> resetPassword(@PathVariable Long id, @RequestBody Map<String, String> body) {
         log.info("重置密码 | userId: {}", id);
         userService.resetPassword(id, body.get("newPassword"));
