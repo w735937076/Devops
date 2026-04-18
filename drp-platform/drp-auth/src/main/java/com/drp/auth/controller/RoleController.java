@@ -46,7 +46,7 @@ public class RoleController {
      */
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('ROLE_MANAGE')")
-    public Result<RoleDTO> update(@PathVariable Long id, @Valid @RequestBody RoleUpdateRequest request) {
+    public Result<RoleDTO> update(@PathVariable("id") Long id, @Valid @RequestBody RoleUpdateRequest request) {
         log.info("更新角色 | id: {}", id);
         request.setId(id);
         RoleDTO role = roleService.update(request);
@@ -58,7 +58,7 @@ public class RoleController {
      */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('ROLE_MANAGE')")
-    public Result<Void> delete(@PathVariable Long id) {
+    public Result<Void> delete(@PathVariable("id") Long id) {
         log.info("删除角色 | id: {}", id);
         roleService.delete(id);
         return Result.success("删除成功");
@@ -69,7 +69,7 @@ public class RoleController {
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('ROLE_MANAGE')")
-    public Result<RoleDTO> getById(@PathVariable Long id) {
+    public Result<RoleDTO> getById(@PathVariable("id") Long id) {
         RoleDTO role = roleService.getById(id);
         return Result.success(role);
     }
@@ -79,7 +79,7 @@ public class RoleController {
      */
     @GetMapping("/code/{code}")
     @PreAuthorize("hasAuthority('ROLE_MANAGE')")
-    public Result<RoleDTO> getByCode(@PathVariable String code) {
+    public Result<RoleDTO> getByCode(@PathVariable("code") String code) {
         RoleDTO role = roleService.getByCode(code);
         return Result.success(role);
     }
@@ -109,7 +109,7 @@ public class RoleController {
      */
     @PutMapping("/{id}/permissions")
     @PreAuthorize("hasAuthority('ROLE_MANAGE')")
-    public Result<Void> assignPermissions(@PathVariable Long id, @RequestBody Map<String, List<Long>> body) {
+    public Result<Void> assignPermissions(@PathVariable("id") Long id, @RequestBody Map<String, List<Long>> body) {
         log.info("分配权限 | roleId: {} | permissionIds: {}", id, body.get("permissionIds"));
         roleService.assignPermissions(id, body.get("permissionIds"));
         return Result.success("权限分配成功");
@@ -120,7 +120,7 @@ public class RoleController {
      */
     @GetMapping("/{id}/permissions")
     @PreAuthorize("hasAuthority('ROLE_MANAGE')")
-    public Result<List<Long>> getPermissionIds(@PathVariable Long id) {
+    public Result<List<Long>> getPermissionIds(@PathVariable("id") Long id) {
         List<Long> permissionIds = roleService.getPermissionIds(id);
         return Result.success(permissionIds);
     }
