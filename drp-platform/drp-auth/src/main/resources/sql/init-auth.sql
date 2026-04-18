@@ -136,10 +136,10 @@ INSERT INTO `sys_role` (`code`, `name`, `description`, `type`, `sort`, `status`)
 ('VIEWER', '查看者', '只读权限', 'SYSTEM', 3, 1);
 
 -- 插入默认管理员用户 (密码: admin123)
--- BCrypt 加密后的密码: $2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iAt6Z5EH
+-- BCrypt 加密后的密码 (通过 Spring Security BCryptPasswordEncoder 生成, strength=10)
 INSERT INTO `sys_user` (`username`, `password`, `real_name`, `email`, `status`) VALUES
-('admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iAt6Z5EH', '管理员', 'admin@drp.com', 1),
-('dev', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iAt6Z5EH', '开发者', 'dev@drp.com', 1);
+('admin', '$2a$10$D4iSfGXkeiFZn33mPQFeQehMTfoex2IMf/fRhLiGXZBCPR6XFsgTm', '管理员', 'admin@drp.com', 1),
+('dev',   '$2a$10$D4iSfGXkeiFZn33mPQFeQehMTfoex2IMf/fRhLiGXZBCPR6XFsgTm', '开发者', 'dev@drp.com', 1);
 
 -- 将 admin 用户关联到 ADMIN 角色
 INSERT INTO `sys_user_role` (`user_id`, `role_id`) VALUES

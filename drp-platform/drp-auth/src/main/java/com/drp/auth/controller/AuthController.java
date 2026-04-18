@@ -29,11 +29,6 @@ public class AuthController {
     private static final Logger log = LoggerFactory.getLogger(AuthController.class);
 
     /**
-     * 请求头中的 Refresh Token 名称
-     */
-    private static final String REFRESH_TOKEN_HEADER = "Refresh-Token";
-
-    /**
      * 请求头中的客户端 IP 名称
      */
     private static final String X_FORWARDED_FOR_HEADER = "X-Forwarded-For";
@@ -74,14 +69,13 @@ public class AuthController {
      * <p>
      * POST /api/auth/refresh
      *
-     * @param refreshToken Refresh Token (从请求头获取)
+     * @param request 包含 refreshToken 的请求体
      * @return 新的登录响应
      */
     @PostMapping("/refresh")
-    public Result<LoginResponse> refresh(@RequestHeader(REFRESH_TOKEN_HEADER) String refreshToken) {
+    public Result<LoginResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
         log.debug("刷新 Token 请求");
 
-        RefreshTokenRequest request = new RefreshTokenRequest(refreshToken);
         LoginResponse response = authService.refresh(request);
 
         log.debug("Token 刷新成功");
