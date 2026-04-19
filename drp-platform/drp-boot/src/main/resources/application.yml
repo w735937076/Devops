@@ -7,7 +7,7 @@
 
 server:
   # 服务端口
-  port: 8080
+  port: 8081
   # 服务名称
   application:
     name: drp-auth

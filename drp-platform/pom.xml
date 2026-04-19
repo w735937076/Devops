@@ -15,6 +15,7 @@
     <modules>
         <module>drp-common</module>
         <module>drp-auth</module>
+        <module>drp-boot</module>
     </modules>
 
     <properties>
