@@ -1048,6 +1048,9 @@
                 <div class="nav-tab" :class="{active: currentPage.startsWith('project')}" @click="navigateTo('project-list')">
                     <i class="fas fa-folder"></i> 项目管理
                 </div>
+                <div class="nav-tab" :class="{active: currentPage.startsWith('credential')}" @click="navigateTo('credential-list')">
+                    <i class="fas fa-key"></i> 凭证管理
+                </div>
                 <div class="nav-tab" :class="{active: currentPage.startsWith('build')}" @click="navigateTo('build-list')">
                     <i class="fas fa-hammer"></i> 构建管理
                 </div>
@@ -1280,41 +1283,79 @@
                 <h3><i class="fas fa-info-circle"></i> 页面说明 - 项目管理</h3>
                 <div class="doc-section">
                     <h4>页面目标</h4>
-                    <p>集中管理所有项目，包括Git配置、环境变量、分支策略、成员权限等核心信息。是构建和部署的前置依赖。</p>
+                    <p>围绕项目基础配置开展管理，覆盖项目 CRUD、Git 凭证关联、构建配置、成员权限、环境变量与分支策略，是后续构建与部署的配置入口。</p>
                 </div>
                 <div class="doc-section">
                     <h4>用户操作路径</h4>
-                    <p>项目管理 → 项目列表 → [创建项目/编辑项目/删除项目/查看详情] → 进入项目详情 → 配置流水线/环境变量/成员</p>
+                    <p>项目管理 → 检索项目 → 创建/编辑项目 → 关联凭证与构建配置 → 进入详情 → 管理成员/环境变量/分支策略</p>
                 </div>
                 <div class="flow-container">
-                    <div class="flow-node">选择项目</div>
+                    <div class="flow-node">筛选项目</div>
                     <i class="flow-arrow fas fa-arrow-right"></i>
-                    <div class="flow-node">查看配置</div>
+                    <div class="flow-node">创建或编辑</div>
                     <i class="flow-arrow fas fa-arrow-right"></i>
-                    <div class="flow-node">触发构建</div>
+                    <div class="flow-node">关联凭证</div>
                     <i class="flow-arrow fas fa-arrow-right"></i>
-                    <div class="flow-node">部署上线</div>
+                    <div class="flow-node">维护详情配置</div>
                 </div>
                 <div class="doc-section">
                     <h4>异常/边界处理</h4>
                     <ul>
-                        <li>Git连接失败 → 显示错误信息，提供重新测试入口</li>
-                        <li>删除有依赖的项目 → 阻止删除，提示先清理关联资源</li>
-                        <li>无权限操作 → 显示无权限提示，联系管理员</li>
+                        <li>项目编码重复 → 实时提示编码已存在，不允许提交</li>
+                        <li>凭证被项目引用 → 删除凭证前提示需先解除关联</li>
+                        <li>分支策略表达式非法 → 阻止保存并给出规则示例</li>
                     </ul>
                 </div>
             </div>
 
+            <div class="grid-3" style="margin-bottom:24px;">
+                <div class="stat-card">
+                    <div class="stat-icon blue"><i class="fas fa-folder-open"></i></div>
+                    <div class="stat-info">
+                        <h3>18</h3>
+                        <p>项目总数</p>
+                    </div>
+                </div>
+                <div class="stat-card" style="cursor:pointer;" @click="navigateTo('credential-list')">
+                    <div class="stat-icon green"><i class="fas fa-key"></i></div>
+                    <div class="stat-info">
+                        <h3>9</h3>
+                        <p>可用凭证</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon orange"><i class="fas fa-code-branch"></i></div>
+                    <div class="stat-info">
+                        <h3>26</h3>
+                        <p>分支策略数</p>
+                    </div>
+                </div>
+            </div>
+
             <div class="card">
-                <div class="card-header">
-                    <div class="card-title"><i class="fas fa-folder-open"></i> 项目列表</div>
-                    <div style="display:flex;gap:12px;">
-                        <input type="text" placeholder="搜索项目..." style="padding:8px 16px;border:1px solid #dcdfe6;border-radius:8px;width:200px;">
+                <div class="card-header" style="align-items:flex-start;">
+                    <div>
+                        <div class="card-title"><i class="fas fa-folder-open"></i> 项目列表</div>
+                        <div style="font-size:13px;color:#909399;margin-top:6px;">支持按关键字、类型、状态筛选，快速进入项目详情配置成员、变量与分支规则。</div>
+                    </div>
+                    <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:flex-end;">
+                        <input type="text" placeholder="搜索项目名称/编码..." style="padding:8px 16px;border:1px solid #dcdfe6;border-radius:8px;width:220px;">
+                        <select style="padding:8px 12px;border:1px solid #dcdfe6;border-radius:8px;background:white;min-width:120px;">
+                            <option>全部类型</option>
+                            <option>JAVA_MAVEN</option>
+                            <option>NODE</option>
+                            <option>PYTHON</option>
+                        </select>
+                        <select style="padding:8px 12px;border:1px solid #dcdfe6;border-radius:8px;background:white;min-width:120px;">
+                            <option>全部状态</option>
+                            <option>启用</option>
+                            <option>禁用</option>
+                        </select>
                         <el-button type="primary" @click="navigateTo('project-create')"><i class="fas fa-plus"></i> 创建项目</el-button>
                     </div>
                 </div>
                 <el-table :data="projects" style="width:100%">
-                    <el-table-column prop="name" label="项目名称" width="180">
+                    <el-table-column prop="name" label="项目名称" min-width="220">
                         <template #default="{row}">
                             <div style="display:flex;align-items:center;gap:10px;">
                                 <div style="width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;color:white;font-weight:600;">
@@ -1322,29 +1363,34 @@
                                 </div>
                                 <div>
                                     <div style="font-weight:500;">{{row.name}}</div>
-                                    <div style="font-size:12px;color:#909399;">{{row.code}}</div>
+                                    <div style="font-size:12px;color:#909399;">编码：{{row.code}}</div>
                                 </div>
                             </div>
                         </template>
                     </el-table-column>
-                    <el-table-column prop="type" label="类型" width="130">
+                    <el-table-column prop="type" label="项目类型" width="130">
                         <template #default="{row}">
                             <span class="status-tag status-info">{{row.type}}</span>
                         </template>
                     </el-table-column>
-                    <el-table-column prop="gitUrl" label="Git仓库" min-width="200">
+                    <el-table-column prop="gitUrl" label="Git 仓库" min-width="220">
                         <template #default="{row}">
-                            <span style="color:#909399;font-size:13px;">{{row.gitUrl}}</span>
+                            <div style="font-size:13px;color:#606266;">{{row.gitUrl}}</div>
+                            <div style="font-size:12px;color:#909399;">默认分支：{{row.defaultBranch}}</div>
                         </template>
                     </el-table-column>
-                    <el-table-column prop="members" label="成员" width="80" align="center">
+                    <el-table-column prop="credentialName" label="关联凭证" width="180">
                         <template #default="{row}">
-                            <el-avatar :size="28" :style="{background: 'linear-gradient(135deg,#409eff,#67c23a)'}">{{row.members}}</el-avatar>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <i class="fas fa-key" style="color:#e6a23c;"></i>
+                                <span>{{row.credentialName}}</span>
+                            </div>
                         </template>
                     </el-table-column>
-                    <el-table-column prop="envs" label="环境" width="120">
+                    <el-table-column prop="summary" label="配置概览" min-width="180">
                         <template #default="{row}">
-                            <span v-for="env in row.envs" :key="env" :class="'status-tag status-' + env.color" style="margin-right:4px;font-size:11px;">{{env.name}}</span>
+                            <div style="font-size:13px;color:#606266;">成员 {{row.members}} / 变量 {{row.variableCount}}</div>
+                            <div style="font-size:12px;color:#909399;">策略 {{row.policyCount}} 条</div>
                         </template>
                     </el-table-column>
                     <el-table-column prop="status" label="状态" width="100">
@@ -1355,16 +1401,17 @@
                             </div>
                         </template>
                     </el-table-column>
-                    <el-table-column label="操作" width="200" fixed="right">
+                    <el-table-column prop="updatedTime" label="最近更新" width="170"></el-table-column>
+                    <el-table-column label="操作" width="220" fixed="right">
                         <template #default="{row}">
                             <el-button type="primary" size="small" link @click="navigateTo('project-detail')">详情</el-button>
-                            <el-button type="primary" size="small" link @click="navigateTo('project-edit')">编辑</el-button>
+                            <el-button type="primary" size="small" link @click="navigateTo('project-create')">编辑</el-button>
                             <el-button type="danger" size="small" link>删除</el-button>
                         </template>
                     </el-table-column>
                 </el-table>
                 <div style="margin-top:20px;display:flex;justify-content:center;">
-                    <el-pagination background layout="prev, pager, next" :total="100"></el-pagination>
+                    <el-pagination background layout="prev, pager, next" :total="180"></el-pagination>
                 </div>
             </div>
         </div>
@@ -1375,16 +1422,19 @@
                 <h3><i class="fas fa-info-circle"></i> 页面说明 - 创建项目</h3>
                 <div class="doc-section">
                     <h4>页面目标</h4>
-                    <p>引导用户完成项目创建，配置Git仓库、环境变量、分支策略等核心信息。</p>
+                    <p>通过四步向导完成项目创建，统一采集项目基础信息、Git/凭证配置、构建参数，并在提交前确认生成内容。</p>
                 </div>
-                <div class="flow-container">
-                    <div class="flow-node">基本信息</div>
-                    <i class="flow-arrow fas fa-arrow-right"></i>
-                    <div class="flow-node">Git配置</div>
-                    <i class="flow-arrow fas fa-arrow-right"></i>
-                    <div class="flow-node">环境变量</div>
-                    <i class="flow-arrow fas fa-arrow-right"></i>
-                    <div class="flow-node">完成</div>
+                <div class="doc-section">
+                    <h4>向导步骤</h4>
+                    <p>Step 1 基本信息 → Step 2 Git 配置 → Step 3 构建配置 → Step 4 完成确认</p>
+                </div>
+                <div class="doc-section">
+                    <h4>设计要点</h4>
+                    <ul>
+                        <li>凭证从凭证中心选择，不在项目表单中直接保存敏感信息</li>
+                        <li>构建配置根据项目类型动态变化，并以 JSON 方式存储</li>
+                        <li>默认只采集基础配置，分支策略与环境变量可在详情页继续维护</li>
+                    </ul>
                 </div>
             </div>
 
@@ -1393,66 +1443,172 @@
                     <div class="step-number"><i class="fas fa-check"></i></div>
                     <div class="step-label">基本信息</div>
                 </div>
-                <div class="step active">
-                    <div class="step-number">2</div>
+                <div class="step completed">
+                    <div class="step-number"><i class="fas fa-check"></i></div>
                     <div class="step-label">Git配置</div>
                 </div>
-                <div class="step">
+                <div class="step active">
                     <div class="step-number">3</div>
-                    <div class="step-label">环境变量</div>
+                    <div class="step-label">构建配置</div>
                 </div>
                 <div class="step">
                     <div class="step-number">4</div>
-                    <div class="step-label">完成</div>
+                    <div class="step-label">完成确认</div>
                 </div>
             </div>
 
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title"><i class="fab fa-git-alt"></i> Git 配置</div>
-                </div>
-                <div style="max-width:600px;">
-                    <div class="form-group">
-                        <label class="form-label">Git 仓库地址 <span style="color:#f56c6c;">*</span></label>
-                        <input type="text" class="form-input" placeholder="https://gitlab.example.com/group/project.git" v-model="projectForm.gitUrl">
-                        <div style="font-size:12px;color:#909399;margin-top:6px;">支持 GitLab、GitHub、Gitee 等主流 Git 仓库</div>
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title"><i class="fas fa-layer-group"></i> Step 1 - 基本信息</div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">认证方式</label>
-                        <div style="display:flex;gap:12px;">
-                            <label style="display:flex;align-items:center;gap:8px;padding:12px 20px;border:1px solid #dcdfe6;border-radius:8px;cursor:pointer;" :style="{borderColor: projectForm.gitAuthType === 'HTTPS' ? 'var(--primary-color)' : ''}">
-                                <input type="radio" v-model="projectForm.gitAuthType" value="HTTPS"> HTTPS
-                            </label>
-                            <label style="display:flex;align-items:center;gap:8px;padding:12px 20px;border:1px solid #dcdfe6;border-radius:8px;cursor:pointer;" :style="{borderColor: projectForm.gitAuthType === 'SSH' ? 'var(--primary-color)' : ''}">
-                                <input type="radio" v-model="projectForm.gitAuthType" value="SSH"> SSH
-                            </label>
+                    <div style="max-width:620px;">
+                        <div class="form-group">
+                            <label class="form-label">项目名称 <span style="color:#f56c6c;">*</span></label>
+                            <input type="text" class="form-input" placeholder="请输入项目名称" v-model="projectForm.name">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">项目编码 <span style="color:#f56c6c;">*</span></label>
+                            <input type="text" class="form-input" placeholder="如 drp-api，仅支持小写字母/数字/中划线" v-model="projectForm.code">
+                            <div style="font-size:12px;color:#909399;margin-top:6px;">用于 Linux 目录名，全局唯一，提交时会校验编码是否重复。</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">项目类型 <span style="color:#f56c6c;">*</span></label>
+                            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                                <label style="display:flex;align-items:center;gap:8px;padding:12px 20px;border:1px solid #dcdfe6;border-radius:8px;cursor:pointer;" :style="{borderColor: projectForm.type === 'JAVA_MAVEN' ? 'var(--primary-color)' : ''}">
+                                    <input type="radio" v-model="projectForm.type" value="JAVA_MAVEN"> JAVA_MAVEN
+                                </label>
+                                <label style="display:flex;align-items:center;gap:8px;padding:12px 20px;border:1px solid #dcdfe6;border-radius:8px;cursor:pointer;" :style="{borderColor: projectForm.type === 'NODE' ? 'var(--primary-color)' : ''}">
+                                    <input type="radio" v-model="projectForm.type" value="NODE"> NODE
+                                </label>
+                                <label style="display:flex;align-items:center;gap:8px;padding:12px 20px;border:1px solid #dcdfe6;border-radius:8px;cursor:pointer;" :style="{borderColor: projectForm.type === 'PYTHON' ? 'var(--primary-color)' : ''}">
+                                    <input type="radio" v-model="projectForm.type" value="PYTHON"> PYTHON
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">项目描述</label>
+                            <textarea class="form-input" style="height:96px;resize:vertical;" placeholder="请输入项目描述" v-model="projectForm.description"></textarea>
                         </div>
                     </div>
-                    <div class="form-group" v-if="projectForm.gitAuthType === 'HTTPS'">
-                        <label class="form-label">用户名</label>
-                        <input type="text" class="form-input" placeholder="请输入用户名" v-model="projectForm.gitUsername">
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title"><i class="fab fa-git-alt"></i> Step 2 - Git 配置</div>
                     </div>
-                    <div class="form-group" v-if="projectForm.gitAuthType === 'HTTPS'">
-                        <label class="form-label">密码/Token</label>
-                        <input type="password" class="form-input" placeholder="请输入密码或Personal Access Token" v-model="projectForm.gitPassword">
+                    <div style="max-width:620px;">
+                        <div class="form-group">
+                            <label class="form-label">Git 仓库地址 <span style="color:#f56c6c;">*</span></label>
+                            <input type="text" class="form-input" placeholder="https://gitlab.example.com/group/project.git" v-model="projectForm.gitUrl">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">关联凭证</label>
+                            <select class="form-input" v-model="projectForm.credentialId">
+                                <option v-for="item in credentials" :key="item.id" :value="item.id">{{item.name}}（{{item.type}}）</option>
+                            </select>
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+                                <span style="font-size:12px;color:#909399;">凭证统一由凭证中心维护，详情接口仅返回脱敏信息。</span>
+                                <el-button type="primary" link size="small" @click="navigateTo('credential-list')">+ 快速新建凭证</el-button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">默认分支</label>
+                            <input type="text" class="form-input" placeholder="master / main / develop" v-model="projectForm.defaultBranch">
+                        </div>
+                        <div style="padding:14px 16px;background:#f5f7fa;border-radius:10px;">
+                            <div style="font-weight:500;margin-bottom:8px;">凭证使用说明</div>
+                            <div style="font-size:13px;color:#606266;line-height:1.8;">支持 `USERNAME_PASSWORD`、`ACCESS_TOKEN`、`SSH_KEY` 三种类型；项目中仅存储 `credential_id`，敏感内容由凭证中心统一加密保存。</div>
+                        </div>
                     </div>
-                    <div class="form-group" v-if="projectForm.gitAuthType === 'SSH'">
-                        <label class="form-label">SSH 私钥</label>
-                        <textarea class="form-input" style="height:120px;resize:vertical;" placeholder="粘贴 SSH 私钥内容" v-model="projectForm.sshKey"></textarea>
+                </div>
+            </div>
+
+            <div class="grid-2" style="margin-top:24px;">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title"><i class="fas fa-sliders-h"></i> Step 3 - 构建配置</div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">默认分支</label>
-                        <input type="text" class="form-input" placeholder="master" v-model="projectForm.defaultBranch">
+                    <div style="padding:16px;background:#f8faff;border:1px dashed #d9ecff;border-radius:12px;margin-bottom:16px;">
+                        <div style="font-weight:500;margin-bottom:6px;">当前项目类型：{{projectForm.type}}</div>
+                        <div style="font-size:13px;color:#909399;">根据项目类型动态展示差异化配置，最终以 `build_config` JSON 保存。</div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">允许发布的分支</label>
-                        <input type="text" class="form-input" placeholder="master,release/* (多个用逗号分隔)" v-model="projectForm.releaseBranches">
-                        <div style="font-size:12px;color:#909399;margin-top:6px;">只有符合规则的分支才能触发构建和部署</div>
+                    <div v-if="projectForm.type === 'JAVA_MAVEN'">
+                        <div class="form-group">
+                            <label class="form-label">JDK 版本</label>
+                            <input type="text" class="form-input" v-model="projectForm.buildConfig.jdk">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Maven 版本</label>
+                            <input type="text" class="form-input" v-model="projectForm.buildConfig.maven">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">构建命令</label>
+                            <input type="text" class="form-input" v-model="projectForm.buildConfig.goals">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Dockerfile</label>
+                            <input type="text" class="form-input" v-model="projectForm.buildConfig.dockerfile">
+                        </div>
                     </div>
-                    <div style="display:flex;gap:12px;margin-top:32px;">
-                        <el-button size="large" @click="navigateTo('project-list')">上一步</el-button>
-                        <el-button type="primary" size="large" @click="navigateTo('project-create-env')">下一步</el-button>
-                        <el-button size="large" @click="navigateTo('project-list')">保存并关闭</el-button>
+                    <div v-if="projectForm.type === 'NODE'">
+                        <div class="form-group">
+                            <label class="form-label">Node 版本</label>
+                            <input type="text" class="form-input" v-model="projectForm.buildConfig.node">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">NPM 版本</label>
+                            <input type="text" class="form-input" v-model="projectForm.buildConfig.npm">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">构建命令</label>
+                            <input type="text" class="form-input" v-model="projectForm.buildConfig.buildCommand">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">输出目录</label>
+                            <input type="text" class="form-input" v-model="projectForm.buildConfig.outputDir">
+                        </div>
+                    </div>
+                    <div v-if="projectForm.type === 'PYTHON'">
+                        <div class="form-group">
+                            <label class="form-label">Python 版本</label>
+                            <input type="text" class="form-input" v-model="projectForm.buildConfig.python">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">依赖文件</label>
+                            <input type="text" class="form-input" v-model="projectForm.buildConfig.requirements">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">运行命令</label>
+                            <input type="text" class="form-input" v-model="projectForm.buildConfig.runCommand">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title"><i class="fas fa-clipboard-check"></i> Step 4 - 完成确认</div>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:16px;">
+                        <div style="padding:16px;border:1px solid #ebeef5;border-radius:10px;">
+                            <div style="font-size:12px;color:#909399;margin-bottom:6px;">基础信息</div>
+                            <div style="font-weight:500;">{{projectForm.name || 'drp-api'}} / {{projectForm.code || 'drp-api'}}</div>
+                            <div style="font-size:13px;color:#606266;margin-top:4px;">类型：{{projectForm.type}}</div>
+                        </div>
+                        <div style="padding:16px;border:1px solid #ebeef5;border-radius:10px;">
+                            <div style="font-size:12px;color:#909399;margin-bottom:6px;">Git 与凭证</div>
+                            <div style="font-weight:500;word-break:break-all;">{{projectForm.gitUrl || 'https://gitlab.example.com/drp/drp-api.git'}}</div>
+                            <div style="font-size:13px;color:#606266;margin-top:4px;">默认分支：{{projectForm.defaultBranch}}</div>
+                        </div>
+                        <div style="padding:16px;background:#fdf6ec;border-radius:10px;">
+                            <div style="font-size:12px;color:#909399;margin-bottom:6px;">创建后可继续配置</div>
+                            <div style="font-size:13px;color:#606266;line-height:1.8;">项目成员、环境变量、分支策略不强制在创建页完成，保存后可在项目详情页按 Tab 继续维护。</div>
+                        </div>
+                        <div style="display:flex;gap:12px;margin-top:8px;">
+                            <el-button size="large" @click="navigateTo('project-list')">返回列表</el-button>
+                            <el-button size="large">保存草稿</el-button>
+                            <el-button type="primary" size="large" @click="navigateTo('project-detail')">创建项目</el-button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1464,30 +1620,34 @@
                 <h3><i class="fas fa-info-circle"></i> 页面说明 - 项目详情</h3>
                 <div class="doc-section">
                     <h4>页面目标</h4>
-                    <p>展示单个项目的完整信息，包括配置信息、流水线、版本历史、成员列表等，支持快捷构建和部署操作。</p>
+                    <p>展示项目基础信息、Git/构建配置、成员、环境变量、分支策略与操作记录，承接任务 04 的全部核心维护能力。</p>
+                </div>
+                <div class="doc-section">
+                    <h4>Tab 设计</h4>
+                    <p>基本信息 / 项目成员 / 环境变量 / 分支策略 / 操作日志</p>
                 </div>
             </div>
 
             <div class="grid-3" style="margin-bottom:24px;">
-                <div class="stat-card" style="cursor:pointer;" @click="navigateTo('build-list')">
-                    <div class="stat-icon green"><i class="fas fa-hammer"></i></div>
+                <div class="stat-card">
+                    <div class="stat-icon blue"><i class="fas fa-users"></i></div>
                     <div class="stat-info">
-                        <h3>156</h3>
-                        <p>总构建次数</p>
+                        <h3>5</h3>
+                        <p>项目成员</p>
                     </div>
                 </div>
-                <div class="stat-card" style="cursor:pointer;" @click="navigateTo('deploy-list')">
-                    <div class="stat-icon orange"><i class="fas fa-cloud-upload-alt"></i></div>
-                    <div class="stat-info">
-                        <h3>48</h3>
-                        <p>总部署次数</p>
-                    </div>
-                </div>
-                <div class="stat-card" style="cursor:pointer;">
-                    <div class="stat-icon blue"><i class="fas fa-code-branch"></i></div>
+                <div class="stat-card">
+                    <div class="stat-icon green"><i class="fas fa-shield-alt"></i></div>
                     <div class="stat-info">
                         <h3>12</h3>
-                        <p>版本数量</p>
+                        <p>环境变量</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon orange"><i class="fas fa-code-branch"></i></div>
+                    <div class="stat-info">
+                        <h3>3</h3>
+                        <p>分支策略</p>
                     </div>
                 </div>
             </div>
@@ -1495,8 +1655,8 @@
             <div class="grid-2">
                 <div class="card">
                     <div class="card-header">
-                        <div class="card-title"><i class="fas fa-cog"></i> 项目配置</div>
-                        <el-button type="primary" size="small" @click="navigateTo('project-edit')"><i class="fas fa-edit"></i> 编辑</el-button>
+                        <div class="card-title"><i class="fas fa-cog"></i> 项目摘要</div>
+                        <el-button type="primary" size="small" @click="navigateTo('project-create')"><i class="fas fa-edit"></i> 编辑项目</el-button>
                     </div>
                     <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;">
                         <div>
@@ -1512,12 +1672,12 @@
                             <div style="font-weight:500;"><span class="status-tag status-info">JAVA_MAVEN</span></div>
                         </div>
                         <div>
-                            <div style="font-size:12px;color:#909399;margin-bottom:4px;">默认分支</div>
-                            <div style="font-weight:500;">master</div>
+                            <div style="font-size:12px;color:#909399;margin-bottom:4px;">状态</div>
+                            <div style="font-weight:500;">启用</div>
                         </div>
                         <div style="grid-column:span 2;">
-                            <div style="font-size:12px;color:#909399;margin-bottom:4px;">Git 仓库</div>
-                            <div style="font-weight:500;color:var(--primary-color);">https://gitlab.example.com/drp/drp-api</div>
+                            <div style="font-size:12px;color:#909399;margin-bottom:4px;">项目描述</div>
+                            <div style="font-weight:500;color:#606266;">DRP 平台后端接口服务，负责认证、配置和项目管理 API。</div>
                         </div>
                     </div>
                 </div>
@@ -1526,14 +1686,14 @@
                         <div class="card-title"><i class="fas fa-bolt"></i> 快捷操作</div>
                     </div>
                     <div style="display:flex;flex-direction:column;gap:12px;">
-                        <el-button type="primary" size="large" @click="showBuildDialog = true">
-                            <i class="fas fa-play"></i> 触发构建
+                        <el-button type="primary" size="large" @click="projectDetailTab = 'members'">
+                            <i class="fas fa-user-plus"></i> 管理成员
                         </el-button>
-                        <el-button type="success" size="large" @click="showDeployDialog = true">
-                            <i class="fas fa-cloud-upload-alt"></i> 部署到 Test
+                        <el-button type="success" size="large" @click="projectDetailTab = 'variables'">
+                            <i class="fas fa-shield-alt"></i> 新增环境变量
                         </el-button>
-                        <el-button type="warning" size="large" @click="showDeployDialog = true">
-                            <i class="fas fa-cloud-upload-alt"></i> 部署到 Prod
+                        <el-button type="warning" size="large" @click="projectDetailTab = 'policies'">
+                            <i class="fas fa-code-branch"></i> 配置分支策略
                         </el-button>
                     </div>
                 </div>
@@ -1541,76 +1701,275 @@
 
             <div class="card">
                 <div class="tab-nav">
-                    <div class="tab-item active">流水线配置</div>
-                    <div class="tab-item">环境变量</div>
-                    <div class="tab-item">版本历史</div>
-                    <div class="tab-item">项目成员</div>
-                    <div class="tab-item">操作日志</div>
+                    <div class="tab-item" :class="{active: projectDetailTab === 'basic'}" @click="projectDetailTab = 'basic'">基本信息</div>
+                    <div class="tab-item" :class="{active: projectDetailTab === 'members'}" @click="projectDetailTab = 'members'">项目成员</div>
+                    <div class="tab-item" :class="{active: projectDetailTab === 'variables'}" @click="projectDetailTab = 'variables'">环境变量</div>
+                    <div class="tab-item" :class="{active: projectDetailTab === 'policies'}" @click="projectDetailTab = 'policies'">分支策略</div>
+                    <div class="tab-item" :class="{active: projectDetailTab === 'logs'}" @click="projectDetailTab = 'logs'">操作日志</div>
                 </div>
 
-                <div class="card-header">
-                    <div class="card-title"><i class="fas fa-stream"></i> 流水线配置</div>
-                    <el-button type="primary" size="small"><i class="fas fa-edit"></i> 编辑流水线</el-button>
+                <div v-if="projectDetailTab === 'basic'">
+                    <div class="card-header">
+                        <div class="card-title"><i class="fas fa-info-circle"></i> 基本信息</div>
+                        <el-button type="primary" size="small" @click="navigateTo('project-create')"><i class="fas fa-edit"></i> 编辑配置</el-button>
+                    </div>
+                    <div class="grid-2">
+                        <div style="padding:18px;border:1px solid #ebeef5;border-radius:10px;">
+                            <div style="font-weight:600;margin-bottom:14px;">Git 配置</div>
+                            <div style="font-size:13px;color:#909399;margin-bottom:4px;">仓库地址</div>
+                            <div style="font-weight:500;color:var(--primary-color);word-break:break-all;">https://gitlab.example.com/drp/drp-api.git</div>
+                            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:16px;">
+                                <div>
+                                    <div style="font-size:12px;color:#909399;margin-bottom:4px;">关联凭证</div>
+                                    <div style="font-weight:500;">公司主 Git Token</div>
+                                </div>
+                                <div>
+                                    <div style="font-size:12px;color:#909399;margin-bottom:4px;">默认分支</div>
+                                    <div style="font-weight:500;">master</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="padding:18px;border:1px solid #ebeef5;border-radius:10px;">
+                            <div style="font-weight:600;margin-bottom:14px;">构建配置 JSON</div>
+                            <div style="padding:14px;background:#1f2937;color:#e5e7eb;border-radius:10px;font-size:13px;line-height:1.8;overflow:auto;">
+                                {<br>
+                                &nbsp;&nbsp;"jdk": "17",<br>
+                                &nbsp;&nbsp;"maven": "3.8.6",<br>
+                                &nbsp;&nbsp;"goals": "clean package -DskipTests",<br>
+                                &nbsp;&nbsp;"dockerfile": "Dockerfile"<br>
+                                }
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div style="display:flex;justify-content:space-between;align-items:center;padding:16px;background:#f5f7fa;border-radius:8px;margin-bottom:20px;">
-                    <div style="display:flex;align-items:center;gap:16px;">
-                        <div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#409eff,#67c23a);display:flex;align-items:center;justify-content:center;color:white;font-weight:600;">drp</div>
-                        <div>
-                            <div style="font-weight:600;">默认流水线</div>
-                            <div style="font-size:13px;color:#909399;">最后修改: 2026-04-16 by Nick</div>
+                <div v-if="projectDetailTab === 'members'">
+                    <div class="card-header">
+                        <div class="card-title"><i class="fas fa-users"></i> 项目成员</div>
+                        <el-button type="primary" size="small"><i class="fas fa-user-plus"></i> 添加成员</el-button>
+                    </div>
+                    <el-table :data="projectMembers" style="width:100%">
+                        <el-table-column prop="realName" label="成员" min-width="180">
+                            <template #default="{row}">
+                                <div style="display:flex;align-items:center;gap:10px;">
+                                    <el-avatar :size="30" :style="{background: row.avatarColor}">{{row.realName.charAt(0)}}</el-avatar>
+                                    <div>
+                                        <div style="font-weight:500;">{{row.realName}}</div>
+                                        <div style="font-size:12px;color:#909399;">{{row.username}}</div>
+                                    </div>
+                                </div>
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="role" label="角色" width="140">
+                            <template #default="{row}">
+                                <span class="status-tag" :class="row.roleClass">{{row.role}}</span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="permissions" label="权限说明" min-width="220"></el-table-column>
+                        <el-table-column prop="joinTime" label="加入时间" width="180"></el-table-column>
+                        <el-table-column label="操作" width="160">
+                            <template #default="{row}">
+                                <el-button type="primary" size="small" link>修改角色</el-button>
+                                <el-button type="danger" size="small" link v-if="row.role !== 'OWNER'">移除</el-button>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                </div>
+
+                <div v-if="projectDetailTab === 'variables'">
+                    <div class="card-header">
+                        <div class="card-title"><i class="fas fa-shield-alt"></i> 环境变量</div>
+                        <div style="display:flex;gap:8px;">
+                            <el-button size="small">按环境筛选</el-button>
+                            <el-button type="primary" size="small"><i class="fas fa-plus"></i> 新增变量</el-button>
                         </div>
                     </div>
-                    <div>
-                        <el-switch active-text="启用缓存"></el-switch>
+                    <div style="display:flex;gap:16px;flex-wrap:wrap;">
+                        <div v-for="group in projectVariables" :key="group.envCode" style="flex:1;min-width:260px;border:1px solid #ebeef5;border-radius:12px;padding:18px;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                                <div style="font-weight:600;text-transform:uppercase;">{{group.envCode}}</div>
+                                <span class="status-tag" :class="group.tagClass">{{group.count}} 个变量</span>
+                            </div>
+                            <div v-for="item in group.items" :key="item.varKey" style="padding:12px 0;border-top:1px solid #f0f2f5;">
+                                <div style="display:flex;justify-content:space-between;gap:12px;">
+                                    <div>
+                                        <div style="font-weight:500;">{{item.varKey}}</div>
+                                        <div style="font-size:12px;color:#909399;margin-top:4px;">{{item.isSecret ? '脱敏展示' : '明文展示'}}</div>
+                                    </div>
+                                    <div style="font-family:monospace;color:#606266;">{{item.varValue}}</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div style="display:flex;gap:16px;flex-wrap:wrap;">
-                    <div style="flex:1;min-width:200px;padding:16px;border:1px solid #e4e7ed;border-radius:8px;">
-                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-                            <div style="width:24px;height:24px;border-radius:50%;background:#909399;color:white;display:flex;align-items:center;justify-content:center;font-size:12px;">1</div>
-                            <span style="font-weight:500;">Checkout</span>
-                            <span class="status-tag status-success" style="font-size:11px;margin-left:auto;">必选</span>
-                        </div>
-                        <div style="font-size:13px;color:#606266;">拉取代码</div>
-                        <div style="font-size:12px;color:#909399;margin-top:4px;">从 Git 仓库检出源代码</div>
+                <div v-if="projectDetailTab === 'policies'">
+                    <div class="card-header">
+                        <div class="card-title"><i class="fas fa-code-branch"></i> 分支策略</div>
+                        <el-button type="primary" size="small"><i class="fas fa-plus"></i> 新增策略</el-button>
                     </div>
-                    <div style="flex:1;min-width:200px;padding:16px;border:1px solid #e4e7ed;border-radius:8px;">
-                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-                            <div style="width:24px;height:24px;border-radius:50%;background:#909399;color:white;display:flex;align-items:center;justify-content:center;font-size:12px;">2</div>
-                            <span style="font-weight:500;">Compile</span>
-                            <span class="status-tag status-success" style="font-size:11px;margin-left:auto;">必选</span>
-                        </div>
-                        <div style="font-size:13px;color:#606266;">编译代码</div>
-                        <div style="font-size:12px;color:#909399;margin-top:4px;">mvn compile</div>
+                    <el-table :data="branchPolicies" style="width:100%">
+                        <el-table-column prop="branchPattern" label="分支匹配规则" min-width="220"></el-table-column>
+                        <el-table-column prop="example" label="示例分支" min-width="180"></el-table-column>
+                        <el-table-column prop="allowAutoDeploy" label="自动部署" width="120" align="center">
+                            <template #default="{row}">
+                                <el-switch v-model="row.allowAutoDeploy" />
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="requireApproval" label="人工审批" width="120" align="center">
+                            <template #default="{row}">
+                                <el-switch v-model="row.requireApproval" />
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="updatedBy" label="维护人" width="120"></el-table-column>
+                        <el-table-column label="操作" width="140">
+                            <template #default>
+                                <el-button type="primary" size="small" link>编辑</el-button>
+                                <el-button type="danger" size="small" link>删除</el-button>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                </div>
+
+                <div v-if="projectDetailTab === 'logs'">
+                    <div class="card-header">
+                        <div class="card-title"><i class="fas fa-history"></i> 操作日志</div>
                     </div>
-                    <div style="flex:1;min-width:200px;padding:16px;border:1px solid #e4e7ed;border-radius:8px;">
-                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-                            <div style="width:24px;height:24px;border-radius:50%;background:#909399;color:white;display:flex;align-items:center;justify-content:center;font-size:12px;">3</div>
-                            <span style="font-weight:500;">Test</span>
-                            <span class="status-tag status-warning" style="font-size:11px;margin-left:auto;">可选</span>
-                        </div>
-                        <div style="font-size:13px;color:#606266;">单元测试</div>
-                        <div style="font-size:12px;color:#909399;margin-top:4px;">mvn test</div>
+                    <el-table :data="projectLogs" style="width:100%">
+                        <el-table-column prop="time" label="时间" width="170"></el-table-column>
+                        <el-table-column prop="operator" label="操作人" width="120"></el-table-column>
+                        <el-table-column prop="type" label="操作类型" width="120">
+                            <template #default="{row}">
+                                <span class="status-tag" :class="row.typeClass">{{row.type}}</span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="detail" label="详情" min-width="280"></el-table-column>
+                        <el-table-column prop="result" label="结果" width="120"></el-table-column>
+                    </el-table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 凭证管理页面 -->
+        <div class="main-container page" :class="{active: currentPage === 'credential-list'}">
+            <div class="page-docs">
+                <h3><i class="fas fa-info-circle"></i> 页面说明 - 凭证管理</h3>
+                <div class="doc-section">
+                    <h4>页面目标</h4>
+                    <p>统一管理 Git Token、用户名密码、SSH 私钥等敏感信息，为项目管理模块提供可复用的凭证选择能力。</p>
+                </div>
+                <div class="doc-section">
+                    <h4>用户操作路径</h4>
+                    <p>凭证管理 → 新建凭证 → 填写类型与密钥信息 → 保存加密存储 → 在项目创建/编辑时选择关联</p>
+                </div>
+                <div class="doc-section">
+                    <h4>设计要点</h4>
+                    <ul>
+                        <li>敏感信息统一加密保存，列表与详情默认脱敏显示</li>
+                        <li>删除前检查是否被项目引用，避免影响已有项目配置</li>
+                        <li>支持 `USERNAME_PASSWORD`、`ACCESS_TOKEN`、`SSH_KEY` 三种凭证类型</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="grid-3" style="margin-bottom:24px;">
+                <div class="stat-card">
+                    <div class="stat-icon blue"><i class="fas fa-key"></i></div>
+                    <div class="stat-info">
+                        <h3>{{credentials.length}}</h3>
+                        <p>凭证总数</p>
                     </div>
-                    <div style="flex:1;min-width:200px;padding:16px;border:1px solid #e4e7ed;border-radius:8px;">
-                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-                            <div style="width:24px;height:24px;border-radius:50%;background:#909399;color:white;display:flex;align-items:center;justify-content:center;font-size:12px;">4</div>
-                            <span style="font-weight:500;">Package</span>
-                            <span class="status-tag status-success" style="font-size:11px;margin-left:auto;">必选</span>
-                        </div>
-                        <div style="font-size:13px;color:#606266;">打包构建</div>
-                        <div style="font-size:12px;color:#909399;margin-top:4px;">mvn package -DskipTests</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon green"><i class="fas fa-link"></i></div>
+                    <div class="stat-info">
+                        <h3>4</h3>
+                        <p>已被项目引用</p>
                     </div>
-                    <div style="flex:1;min-width:200px;padding:16px;border:1px solid #e4e7ed;border-radius:8px;">
-                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-                            <div style="width:24px;height:24px;border-radius:50%;background:#909399;color:white;display:flex;align-items:center;justify-content:center;font-size:12px;">5</div>
-                            <span style="font-weight:500;">Upload</span>
-                            <span class="status-tag status-success" style="font-size:11px;margin-left:auto;">必选</span>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon orange"><i class="fas fa-user-shield"></i></div>
+                    <div class="stat-info">
+                        <h3>3</h3>
+                        <p>凭证类型</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title"><i class="fas fa-list"></i> 凭证列表</div>
+                        <div style="display:flex;gap:12px;">
+                            <input type="text" placeholder="搜索凭证名称/账号..." style="padding:8px 16px;border:1px solid #dcdfe6;border-radius:8px;width:220px;">
+                            <el-button type="primary"><i class="fas fa-plus"></i> 新建凭证</el-button>
                         </div>
-                        <div style="font-size:13px;color:#606266;">上传产物</div>
-                        <div style="font-size:12px;color:#909399;margin-top:4px;">上传到 MinIO 存储</div>
+                    </div>
+                    <el-table :data="credentials" style="width:100%">
+                        <el-table-column prop="name" label="凭证名称" min-width="180"></el-table-column>
+                        <el-table-column prop="type" label="类型" width="160">
+                            <template #default="{row}">
+                                <span class="status-tag status-info">{{row.type}}</span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="account" label="账号/标识" min-width="180"></el-table-column>
+                        <el-table-column prop="description" label="描述" min-width="220"></el-table-column>
+                        <el-table-column prop="referencedBy" label="关联项目" width="120" align="center"></el-table-column>
+                        <el-table-column prop="createTime" label="创建时间" width="170"></el-table-column>
+                        <el-table-column label="操作" width="180" fixed="right">
+                            <template #default="{row}">
+                                <el-button type="primary" size="small" link>编辑</el-button>
+                                <el-button type="primary" size="small" link>查看详情</el-button>
+                                <el-button type="danger" size="small" link :disabled="row.referencedBy > 0">删除</el-button>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title"><i class="fas fa-edit"></i> 新建凭证示例</div>
+                    </div>
+                    <div style="max-width:620px;">
+                        <div class="form-group">
+                            <label class="form-label">凭证名称 <span style="color:#f56c6c;">*</span></label>
+                            <input type="text" class="form-input" value="公司主 Git Token">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">凭证类型 <span style="color:#f56c6c;">*</span></label>
+                            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                                <label style="display:flex;align-items:center;gap:8px;padding:12px 18px;border:1px solid #409eff;border-radius:8px;cursor:pointer;">
+                                    <input type="radio" checked> ACCESS_TOKEN
+                                </label>
+                                <label style="display:flex;align-items:center;gap:8px;padding:12px 18px;border:1px solid #dcdfe6;border-radius:8px;cursor:pointer;">
+                                    <input type="radio"> USERNAME_PASSWORD
+                                </label>
+                                <label style="display:flex;align-items:center;gap:8px;padding:12px 18px;border:1px solid #dcdfe6;border-radius:8px;cursor:pointer;">
+                                    <input type="radio"> SSH_KEY
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">账号/标识</label>
+                            <input type="text" class="form-input" value="gitlab-ci-token">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">敏感内容 <span style="color:#f56c6c;">*</span></label>
+                            <textarea class="form-input" style="height:120px;resize:vertical;">glpat-********************************</textarea>
+                            <div style="font-size:12px;color:#909399;margin-top:6px;">保存后将加密存储，详情页默认只展示脱敏内容。</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">描述</label>
+                            <textarea class="form-input" style="height:90px;resize:vertical;">用于 drp-api、drp-auth 等服务拉取 GitLab 仓库代码。</textarea>
+                        </div>
+                        <div style="padding:14px 16px;background:#fdf6ec;border-radius:10px;margin-bottom:20px;font-size:13px;color:#606266;line-height:1.8;">
+                            删除凭证时若已被项目引用，应提示“请先解除项目关联后再删除”，对应任务 04 的校验要求。
+                        </div>
+                        <div style="display:flex;gap:12px;">
+                            <el-button>取消</el-button>
+                            <el-button type="primary">保存凭证</el-button>
+                            <el-button type="success" @click="navigateTo('project-create')">去项目中选择</el-button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2476,13 +2835,26 @@
                 });
 
                 const projectForm = reactive({
-                    gitUrl: '',
-                    gitAuthType: 'HTTPS',
-                    gitUsername: '',
-                    gitPassword: '',
-                    sshKey: '',
+                    name: 'drp-api',
+                    code: 'drp-api',
+                    type: 'JAVA_MAVEN',
+                    description: 'DRP 平台后端接口服务',
+                    gitUrl: 'https://gitlab.example.com/drp/drp-api.git',
+                    credentialId: 2,
                     defaultBranch: 'master',
-                    releaseBranches: ''
+                    buildConfig: {
+                        jdk: '17',
+                        maven: '3.8.6',
+                        goals: 'clean package -DskipTests',
+                        dockerfile: 'Dockerfile',
+                        node: '18.x',
+                        npm: '9.x',
+                        buildCommand: 'npm run build',
+                        outputDir: 'dist',
+                        python: '3.10',
+                        requirements: 'requirements.txt',
+                        runCommand: 'python manage.py migrate'
+                    }
                 });
 
                 const buildForm = reactive({
@@ -2518,11 +2890,68 @@
                     { name: 'drp-auth', code: 'drp-auth', type: 'JAVA_MAVEN', status: 'offline', statusText: '离线' }
                 ]);
 
+                const projectDetailTab = ref('basic');
+
+                const credentials = ref([
+                    { id: 1, name: 'GitLab SSH 主账号', type: 'SSH_KEY', account: 'git@gitlab.example.com', description: '用于核心项目 SSH 拉取代码', referencedBy: 2, createTime: '2026-04-01 09:20' },
+                    { id: 2, name: '公司主 Git Token', type: 'ACCESS_TOKEN', account: 'gitlab-ci-token', description: '用于 drp-api、drp-auth 等项目代码拉取', referencedBy: 2, createTime: '2026-04-03 14:10' },
+                    { id: 3, name: '只读拉取账号', type: 'USERNAME_PASSWORD', account: 'readonly-bot', description: '用于低权限环境只读拉取仓库', referencedBy: 0, createTime: '2026-04-05 11:40' }
+                ]);
+
                 const projects = ref([
-                    { name: 'drp-api', code: 'drp-api', type: 'JAVA_MAVEN', gitUrl: 'https://gitlab.example.com/drp/drp-api', members: 5, envs: [{name:'dev',color:'success'},{name:'test',color:'warning'},{name:'prod',color:'danger'}], status: 'online', statusText: '正常' },
-                    { name: 'drp-web', code: 'drp-web', type: 'VUE', gitUrl: 'https://gitlab.example.com/drp/drp-web', members: 3, envs: [{name:'dev',color:'success'},{name:'test',color:'warning'}], status: 'online', statusText: '正常' },
-                    { name: 'drp-gateway', code: 'drp-gateway', type: 'JAVA_MAVEN', gitUrl: 'https://gitlab.example.com/drp/drp-gateway', members: 4, envs: [{name:'dev',color:'success'},{name:'test',color:'warning'},{name:'prod',color:'danger'}], status: 'online', statusText: '正常' },
-                    { name: 'drp-auth', code: 'drp-auth', type: 'JAVA_MAVEN', gitUrl: 'https://gitlab.example.com/drp/drp-auth', members: 3, envs: [{name:'dev',color:'success'},{name:'test',color:'warning'},{name:'prod',color:'danger'}], status: 'offline', statusText: '离线' }
+                    { name: 'drp-api', code: 'drp-api', type: 'JAVA_MAVEN', gitUrl: 'https://gitlab.example.com/drp/drp-api.git', credentialName: '公司主 Git Token', defaultBranch: 'master', members: 5, variableCount: 12, policyCount: 3, status: 'online', statusText: '启用', updatedTime: '2026-04-19 09:30' },
+                    { name: 'drp-web', code: 'drp-web', type: 'NODE', gitUrl: 'https://gitlab.example.com/drp/drp-web.git', credentialName: 'GitLab SSH 主账号', defaultBranch: 'main', members: 3, variableCount: 8, policyCount: 2, status: 'online', statusText: '启用', updatedTime: '2026-04-19 09:10' },
+                    { name: 'drp-worker', code: 'drp-worker', type: 'PYTHON', gitUrl: 'https://gitlab.example.com/drp/drp-worker.git', credentialName: '只读拉取账号', defaultBranch: 'develop', members: 4, variableCount: 6, policyCount: 1, status: 'busy', statusText: '配置中', updatedTime: '2026-04-18 18:45' },
+                    { name: 'drp-auth', code: 'drp-auth', type: 'JAVA_MAVEN', gitUrl: 'https://gitlab.example.com/drp/drp-auth.git', credentialName: '公司主 Git Token', defaultBranch: 'master', members: 3, variableCount: 10, policyCount: 2, status: 'offline', statusText: '禁用', updatedTime: '2026-04-17 16:20' }
+                ]);
+
+                const projectMembers = ref([
+                    { username: 'nick', realName: 'Nick', role: 'OWNER', roleClass: 'status-danger', permissions: '项目配置、成员与策略管理', joinTime: '2026-04-01 10:00', avatarColor: 'linear-gradient(135deg,#667eea,#764ba2)' },
+                    { username: 'alice', realName: 'Alice', role: 'DEVELOPER', roleClass: 'status-success', permissions: '可维护环境变量并触发测试环境发布', joinTime: '2026-04-03 14:20', avatarColor: 'linear-gradient(135deg,#409eff,#67c23a)' },
+                    { username: 'bob', realName: 'Bob', role: 'DEVELOPER', roleClass: 'status-success', permissions: '可查看项目并维护构建配置', joinTime: '2026-04-05 09:15', avatarColor: 'linear-gradient(135deg,#e6a23c,#f7ba2a)' },
+                    { username: 'cindy', realName: 'Cindy', role: 'REPORTER', roleClass: 'status-info', permissions: '只读访问，不能修改配置', joinTime: '2026-04-08 16:30', avatarColor: 'linear-gradient(135deg,#909399,#b1b3b8)' }
+                ]);
+
+                const projectVariables = ref([
+                    {
+                        envCode: 'dev',
+                        count: 4,
+                        tagClass: 'status-success',
+                        items: [
+                            { varKey: 'SPRING_PROFILES_ACTIVE', varValue: 'dev', isSecret: false },
+                            { varKey: 'DB_PASSWORD', varValue: '******', isSecret: true }
+                        ]
+                    },
+                    {
+                        envCode: 'test',
+                        count: 4,
+                        tagClass: 'status-warning',
+                        items: [
+                            { varKey: 'SPRING_PROFILES_ACTIVE', varValue: 'test', isSecret: false },
+                            { varKey: 'REDIS_PASSWORD', varValue: '******', isSecret: true }
+                        ]
+                    },
+                    {
+                        envCode: 'prod',
+                        count: 4,
+                        tagClass: 'status-danger',
+                        items: [
+                            { varKey: 'SPRING_PROFILES_ACTIVE', varValue: 'prod', isSecret: false },
+                            { varKey: 'JWT_SECRET', varValue: '******', isSecret: true }
+                        ]
+                    }
+                ]);
+
+                const branchPolicies = ref([
+                    { branchPattern: 'release/*', example: 'release/v1.0.0', allowAutoDeploy: true, requireApproval: true, updatedBy: 'Nick' },
+                    { branchPattern: 'hotfix/*', example: 'hotfix/login-bug', allowAutoDeploy: false, requireApproval: true, updatedBy: 'Alice' },
+                    { branchPattern: 'develop', example: 'develop', allowAutoDeploy: true, requireApproval: false, updatedBy: 'Bob' }
+                ]);
+
+                const projectLogs = ref([
+                    { time: '2026-04-19 09:30', operator: 'Nick', type: '更新项目', typeClass: 'status-info', detail: '修改默认分支为 master，并更新 Maven 构建参数', result: '成功' },
+                    { time: '2026-04-19 08:55', operator: 'Alice', type: '新增变量', typeClass: 'status-success', detail: '在 test 环境新增 REDIS_PASSWORD，页面脱敏显示', result: '成功' },
+                    { time: '2026-04-18 17:20', operator: 'Bob', type: '调整策略', typeClass: 'status-warning', detail: '新增 release/* 分支规则，开启自动部署并要求审批', result: '成功' }
                 ]);
 
                 const builds = ref([
@@ -2681,11 +3110,17 @@
                     showServerDialog,
                     loginForm,
                     projectForm,
+                    projectDetailTab,
                     buildForm,
                     deployForm,
                     serverForm,
                     recentProjects,
+                    credentials,
                     projects,
+                    projectMembers,
+                    projectVariables,
+                    branchPolicies,
+                    projectLogs,
                     builds,
                     deploys,
                     servers,
