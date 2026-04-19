@@ -14,6 +14,9 @@ export * from './auth'
 // 项目模块
 export * from './project'
 
+// 凭证模块
+export * from './credential'
+
 // 构建模块
 export * from './build'
 

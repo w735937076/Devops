@@ -105,6 +105,11 @@ const menuList: MenuItem[] = [
     icon: 'FolderOpened'
   },
   {
+    path: '/credentials',
+    title: '凭证管理',
+    icon: 'Key'
+  },
+  {
     path: '/builds',
     title: '构建记录',
     icon: 'Box'

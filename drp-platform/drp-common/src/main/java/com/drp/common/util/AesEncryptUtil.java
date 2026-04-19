@@ -37,9 +37,9 @@ public class AesEncryptUtil {
     private static final int GCM_IV_LENGTH = 12;
 
     /**
-     * 默认密钥（Base64编码的32字节密钥）
+     * 默认密钥（Base64编码的32字节密钥，即256位）
      */
-    private static final String DEFAULT_KEY = "dHJ1c3RlZF9rZXlfZm9yX2RycF9wbGF0Zm9ybQ==";
+    private static final String DEFAULT_KEY = "dHJ1c3RlZF9rZXlfZm9yX2RycF9wbGF0Zm9ybV9rZXk=";
 
     /**
      * 私有构造函数，防止实例化

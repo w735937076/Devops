@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(export JAVA_HOME=\"/d/Program Files/Java/jdk-17.0.9\")",
+      "Bash(export PATH=\"$JAVA_HOME/bin:$PATH\")",
+      "Bash(mvn install *)"
+    ]
+  }
+}

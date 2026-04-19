@@ -63,6 +63,14 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '项目详情', hidden: true }
       },
 
+      // 凭证管理
+      {
+        path: 'credentials',
+        name: 'CredentialList',
+        component: () => import('@/views/credential/List.vue'),
+        meta: { title: '凭证管理', icon: 'Key' }
+      },
+
       // 构建管理
       {
         path: 'builds',

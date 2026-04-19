@@ -33,6 +33,11 @@
             <artifactId>drp-auth</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.drp</groupId>
+            <artifactId>drp-project</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
     </dependencies>
 
 </project>
