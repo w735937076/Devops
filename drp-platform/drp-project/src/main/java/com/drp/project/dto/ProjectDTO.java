@@ -1,96 +1,48 @@
-package com.drp.project.entity;
+package com.drp.project.dto;
 
-import com.baomidou.mybatisplus.annotation.FieldFill;
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableLogic;
-import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * 项目实体
+ * 项目返回对象
  *
  * @author Nick
  */
-@TableName("prj_project")
-public class Project implements Serializable {
+public class ProjectDTO implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @TableId(type = IdType.AUTO)
     private Long id;
 
-    /**
-     * 项目名称
-     */
     private String name;
 
-    /**
-     * 项目编码(用于Linux目录名，全局唯一)
-     */
     private String code;
 
-    /**
-     * 类型：JAVA_MAVEN, NODE, PYTHON
-     */
     private String type;
 
-    /**
-     * 项目描述
-     */
+    private String typeDesc;
+
     private String description;
 
-    /**
-     * Git仓库地址
-     */
     private String gitUrl;
 
-    /**
-     * 关联凭证ID
-     */
     private Long credentialId;
 
-    /**
-     * 默认构建分支
-     */
+    private String credentialName;
+
     private String defaultBranch;
 
-    /**
-     * 构建参数配置(JSON格式)
-     * 例如：{"jdk": "17", "maven": "3.8"} 或 {"node": "18.x"}
-     */
     private String buildConfig;
 
-    /**
-     * 状态：0-禁用, 1-启用
-     */
     private Integer status;
 
-    /**
-     * 乐观锁版本号
-     */
-    private Integer version;
+    private String statusDesc;
 
-    /**
-     * 逻辑删除
-     */
-    @TableLogic
-    private Boolean deleted;
-
-    /**
-     * 创建者ID
-     */
-    private Long createUser;
-
-    @TableField(fill = FieldFill.INSERT)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime createTime;
 
-    @TableField(fill = FieldFill.INSERT_UPDATE)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime updateTime;
 
@@ -128,6 +80,14 @@ public class Project implements Serializable {
         this.type = type;
     }
 
+    public String getTypeDesc() {
+        return typeDesc;
+    }
+
+    public void setTypeDesc(String typeDesc) {
+        this.typeDesc = typeDesc;
+    }
+
     public String getDescription() {
         return description;
     }
@@ -150,6 +110,14 @@ public class Project implements Serializable {
 
     public void setCredentialId(Long credentialId) {
         this.credentialId = credentialId;
+    }
+
+    public String getCredentialName() {
+        return credentialName;
+    }
+
+    public void setCredentialName(String credentialName) {
+        this.credentialName = credentialName;
     }
 
     public String getDefaultBranch() {
@@ -176,28 +144,12 @@ public class Project implements Serializable {
         this.status = status;
     }
 
-    public Integer getVersion() {
-        return version;
+    public String getStatusDesc() {
+        return statusDesc;
     }
 
-    public void setVersion(Integer version) {
-        this.version = version;
-    }
-
-    public Boolean getDeleted() {
-        return deleted;
-    }
-
-    public void setDeleted(Boolean deleted) {
-        this.deleted = deleted;
-    }
-
-    public Long getCreateUser() {
-        return createUser;
-    }
-
-    public void setCreateUser(Long createUser) {
-        this.createUser = createUser;
+    public void setStatusDesc(String statusDesc) {
+        this.statusDesc = statusDesc;
     }
 
     public LocalDateTime getCreateTime() {

@@ -17,6 +17,6 @@ public interface ProjectRepository extends BaseMapper<Project> {
     /**
      * 统计引用某凭证的项目数量
      */
-    @Select("SELECT COUNT(1) FROM prj_project WHERE credential_id = #{credentialId} AND is_deleted = 0")
+    @Select("SELECT COUNT(1) FROM prj_project WHERE credential_id = #{credentialId} AND deleted = 0")
     long countByCredentialId(@Param("credentialId") Long credentialId);
 }

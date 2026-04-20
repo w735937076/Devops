@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS `prj_project` (
     -- 状态与审计
     `status` TINYINT DEFAULT 1 COMMENT '状态：0-禁用, 1-启用',
     `version` INT DEFAULT 1 COMMENT '乐观锁版本号',
-    `is_deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除',
+    `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除',
     `create_user` BIGINT DEFAULT NULL COMMENT '创建者ID',
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
     `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

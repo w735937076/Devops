@@ -7,7 +7,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Project } from '@/api/project'
-import { getProjectList } from '@/api/project'
+import { getProjectPage } from '@/api/project'
 
 // =====================================================
 // 创建 Store
@@ -59,8 +59,8 @@ export const useProjectStore = defineStore('project', () => {
   async function fetchProjects(params?: { keyword?: string; status?: number }) {
     loading.value = true
     try {
-      const res = await getProjectList(params)
-      projects.value = res.list
+      const res = await getProjectPage(params)
+      projects.value = res.records
       total.value = res.total
       return res
     } finally {

@@ -10,17 +10,27 @@ import { get, post, put, del } from './request'
 // 类型定义
 // =====================================================
 
+/** 项目类型 */
+export type ProjectType = 'JAVA_MAVEN' | 'NODE' | 'PYTHON'
+
+/** 项目状态 */
+export type ProjectStatus = 0 | 1
+
 /** 项目信息 */
 export interface Project {
   id: number
   name: string
   code: string
+  type: ProjectType
+  typeDesc: string
   description: string
   gitUrl: string
-  gitType: string
-  buildTool: string
-  deployType: string
-  status: number
+  credentialId: number | null
+  credentialName: string | null
+  defaultBranch: string
+  buildConfig: string | null
+  status: ProjectStatus
+  statusDesc: string
   createTime: string
   updateTime: string
 }
@@ -28,6 +38,7 @@ export interface Project {
 /** 项目列表查询参数 */
 export interface ProjectQuery {
   keyword?: string
+  type?: string
   status?: number
   page?: number
   pageSize?: number
@@ -37,11 +48,25 @@ export interface ProjectQuery {
 export interface CreateProjectParams {
   name: string
   code: string
+  type: ProjectType
   description?: string
   gitUrl: string
-  gitType?: string
-  buildTool?: string
-  deployType?: string
+  credentialId?: number | null
+  defaultBranch?: string
+  buildConfig?: string
+  status?: ProjectStatus
+}
+
+/** 更新项目参数 */
+export interface UpdateProjectParams {
+  name: string
+  type: ProjectType
+  description?: string
+  gitUrl: string
+  credentialId?: number | null
+  defaultBranch?: string
+  buildConfig?: string
+  status?: ProjectStatus
 }
 
 // =====================================================
@@ -49,10 +74,10 @@ export interface CreateProjectParams {
 // =====================================================
 
 /**
- * 获取项目列表
+ * 分页查询项目
  */
-export function getProjectList(params?: ProjectQuery) {
-  return get<{ list: Project[]; total: number }>('/projects', params)
+export function getProjectPage(params?: ProjectQuery) {
+  return get<{ records: Project[]; total: number }>('/projects', params)
 }
 
 /**
@@ -72,7 +97,7 @@ export function createProject(data: CreateProjectParams) {
 /**
  * 更新项目
  */
-export function updateProject(id: number, data: Partial<CreateProjectParams>) {
+export function updateProject(id: number, data: UpdateProjectParams) {
   return put<Project>(`/projects/${id}`, data)
 }
 
@@ -81,11 +106,4 @@ export function updateProject(id: number, data: Partial<CreateProjectParams>) {
  */
 export function deleteProject(id: number) {
   return del(`/projects/${id}`)
-}
-
-/**
- * 获取项目环境变量
- */
-export function getProjectVariables(projectId: number) {
-  return get<{ key: string; value: string }[]>(`/projects/${projectId}/variables`)
 }
