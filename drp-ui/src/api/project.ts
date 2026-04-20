@@ -107,3 +107,10 @@ export function updateProject(id: number, data: UpdateProjectParams) {
 export function deleteProject(id: number) {
   return del(`/projects/${id}`)
 }
+
+/**
+ * 获取 Git 仓库分支列表
+ */
+export function fetchGitBranches(gitUrl: string, credentialId?: number | null) {
+  return get<string[]>('/projects/git/branches', { gitUrl, credentialId })
+}

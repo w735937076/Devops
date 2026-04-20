@@ -271,7 +271,25 @@
               </div>
               <div class="form-group">
                 <label class="form-label">默认分支</label>
-                <el-input v-model="formData.defaultBranch" placeholder="master / main / develop" />
+                <div style="display: flex; gap: 8px; align-items: center">
+                  <el-select
+                    v-model="formData.defaultBranch"
+                    placeholder="请选择或输入分支名"
+                    filterable
+                    allow-create
+                    default-first-option
+                    style="flex: 1"
+                  >
+                    <el-option v-for="branch in branchList" :key="branch" :label="branch" :value="branch" />
+                  </el-select>
+                  <el-button
+                    @click="handleFetchBranches"
+                    :loading="fetchingBranches"
+                    :disabled="!formData.gitUrl"
+                  >
+                    拉取分支
+                  </el-button>
+                </div>
               </div>
               <div style="padding: 14px 16px; background: #f5f7fa; border-radius: 10px">
                 <div style="font-weight: 500; margin-bottom: 8px">凭证使用说明</div>
@@ -442,13 +460,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getProjectPage,
   createProject,
   updateProject,
   deleteProject,
+  fetchGitBranches,
   type Project,
   type ProjectQuery,
   type CreateProjectParams
@@ -461,6 +480,8 @@ const tableData = ref<Project[]>([])
 const total = ref(0)
 const credentialCount = ref(0)
 const credentialList = ref<Credential[]>([])
+const branchList = ref<string[]>([])
+const fetchingBranches = ref(false)
 
 // 查询参数
 const queryParams = reactive<ProjectQuery & { pageSize: number }>({
@@ -528,6 +549,33 @@ function getBuildConfigSummary() {
   if (buildConfig.buildCommand) parts.push(`构建命令: ${buildConfig.buildCommand}`)
   if (buildConfig.runCommand) parts.push(`运行命令: ${buildConfig.runCommand}`)
   return parts.length > 0 ? parts.join(' | ') : '未配置构建参数'
+}
+
+// 拉取 Git 分支列表
+async function handleFetchBranches() {
+  if (!formData.gitUrl) {
+    ElMessage.warning('请先输入 Git 仓库地址')
+    return
+  }
+  fetchingBranches.value = true
+  try {
+    branchList.value = await fetchGitBranches(formData.gitUrl, formData.credentialId)
+    if (branchList.value.length === 0) {
+      ElMessage.warning('未找到任何分支')
+    } else {
+      ElMessage.success(`成功获取 ${branchList.value.length} 个分支`)
+      // 如果当前默认分支在列表中，选中它
+      if (formData.defaultBranch && branchList.value.includes(formData.defaultBranch)) {
+        // already selected
+      } else if (branchList.value.length === 1) {
+        formData.defaultBranch = branchList.value[0]
+      }
+    }
+  } catch (error: any) {
+    ElMessage.error(error.message || '获取分支列表失败')
+  } finally {
+    fetchingBranches.value = false
+  }
 }
 
 // 解析 buildConfig JSON 到 buildConfig 对象
@@ -674,6 +722,14 @@ function resetForm() {
   formData.status = 1
   Object.keys(buildConfig).forEach((k) => delete buildConfig[k as keyof typeof buildConfig])
 }
+
+// 监听 Git URL 和凭证变化，清空分支列表
+watch(
+  () => [formData.gitUrl, formData.credentialId],
+  () => {
+    branchList.value = []
+  }
+)
 
 onMounted(() => {
   loadData()
