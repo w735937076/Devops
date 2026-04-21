@@ -114,3 +114,80 @@ export function deleteProject(id: number) {
 export function fetchGitBranches(gitUrl: string, credentialId?: number | null) {
   return get<string[]>('/projects/git/branches', { gitUrl, credentialId })
 }
+
+// =====================================================
+// 项目成员管理
+// =====================================================
+
+/** 项目成员角色 */
+export type MemberRole = 'OWNER' | 'DEVELOPER' | 'REPORTER'
+
+/** 项目成员信息 */
+export interface ProjectMember {
+  id: number
+  projectId: number
+  userId: number
+  username: string
+  realName: string
+  role: MemberRole
+  roleDesc: string
+  permission: string
+  createTime: string
+}
+
+/** 添加项目成员参数 */
+export interface AddMemberParams {
+  userId: number
+  role: MemberRole
+}
+
+/** 更新成员角色参数 */
+export interface UpdateMemberParams {
+  role: MemberRole
+}
+
+/**
+ * 获取项目成员列表
+ */
+export function getProjectMembers(projectId: number) {
+  return get<ProjectMember[]>(`/projects/${projectId}/members`)
+}
+
+/**
+ * 添加项目成员
+ */
+export function addProjectMember(projectId: number, data: AddMemberParams) {
+  return post<ProjectMember>(`/projects/${projectId}/members`, data)
+}
+
+/**
+ * 更新成员角色
+ */
+export function updateProjectMember(projectId: number, userId: number, data: UpdateMemberParams) {
+  return put<ProjectMember>(`/projects/${projectId}/members/${userId}`, data)
+}
+
+/**
+ * 移除项目成员
+ */
+export function removeProjectMember(projectId: number, userId: number) {
+  return del(`/projects/${projectId}/members/${userId}`)
+}
+
+// =====================================================
+// 用户管理（用于项目成员选择）
+// =====================================================
+
+/** 用户信息（简化版） */
+export interface SimpleUser {
+  id: number
+  username: string
+  realName: string
+}
+
+/**
+ * 获取可选用户列表（用于添加项目成员）
+ */
+export function getAvailableUsers() {
+  return get<SimpleUser[]>('/users/simple-list')
+}

@@ -2,6 +2,9 @@ package com.drp.auth.service;
 
 import com.drp.auth.dto.*;
 import com.drp.common.dto.PageResponse;
+import com.drp.user.api.dto.SimpleUserDTO;
+
+import java.util.List;
 
 /**
  * 用户管理服务接口
@@ -49,4 +52,9 @@ public interface UserService {
      * 重置密码
      */
     void resetPassword(Long userId, String newPassword);
+
+    /**
+     * 获取所有用户（简化信息，用于下拉选择）
+     */
+    List<SimpleUserDTO> listAllSimple();
 }

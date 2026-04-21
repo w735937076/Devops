@@ -1746,7 +1746,7 @@
                 <div v-if="projectDetailTab === 'members'">
                     <div class="card-header">
                         <div class="card-title"><i class="fas fa-users"></i> 项目成员</div>
-                        <el-button type="primary" size="small"><i class="fas fa-user-plus"></i> 添加成员</el-button>
+                        <el-button type="primary" size="small" @click="showMemberDialog = true"><i class="fas fa-user-plus"></i> 添加成员</el-button>
                     </div>
                     <el-table :data="projectMembers" style="width:100%">
                         <el-table-column prop="realName" label="成员" min-width="180">
@@ -1781,7 +1781,7 @@
                         <div class="card-title"><i class="fas fa-shield-alt"></i> 环境变量</div>
                         <div style="display:flex;gap:8px;">
                             <el-button size="small">按环境筛选</el-button>
-                            <el-button type="primary" size="small"><i class="fas fa-plus"></i> 新增变量</el-button>
+                            <el-button type="primary" size="small" @click="showVariableDialog = true"><i class="fas fa-plus"></i> 新增变量</el-button>
                         </div>
                     </div>
                     <div style="display:flex;gap:16px;flex-wrap:wrap;">
@@ -1806,7 +1806,7 @@
                 <div v-if="projectDetailTab === 'policies'">
                     <div class="card-header">
                         <div class="card-title"><i class="fas fa-code-branch"></i> 分支策略</div>
-                        <el-button type="primary" size="small"><i class="fas fa-plus"></i> 新增策略</el-button>
+                        <el-button type="primary" size="small" @click="showPolicyDialog = true"><i class="fas fa-plus"></i> 新增策略</el-button>
                     </div>
                     <el-table :data="branchPolicies" style="width:100%">
                         <el-table-column prop="branchPattern" label="分支匹配规则" min-width="220"></el-table-column>
@@ -1846,6 +1846,141 @@
                         <el-table-column prop="detail" label="详情" min-width="280"></el-table-column>
                         <el-table-column prop="result" label="结果" width="120"></el-table-column>
                     </el-table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 添加成员弹窗 -->
+        <div class="modal-overlay" v-if="showMemberDialog" @click.self="showMemberDialog = false">
+            <div class="modal-content" style="max-width:500px;">
+                <div class="modal-header">
+                    <div style="font-size:18px;font-weight:600;"><i class="fas fa-user-plus" style="color:var(--primary-color);margin-right:8px;"></i>添加项目成员</div>
+                    <i class="fas fa-times" style="cursor:pointer;font-size:20px;color:#909399;" @click="showMemberDialog = false"></i>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">选择用户 <span style="color:#f56c6c;">*</span></label>
+                        <select class="form-input">
+                            <option value="">请选择用户</option>
+                            <option value="1">dev1 - 开发者1</option>
+                            <option value="2">dev2 - 开发者2</option>
+                            <option value="3">tester1 - 测试人员1</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">项目角色 <span style="color:#f56c6c;">*</span></label>
+                        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                            <label style="display:flex;align-items:center;gap:8px;padding:10px 16px;border:1px solid #dcdfe6;border-radius:8px;cursor:pointer;">
+                                <input type="radio" name="memberRole" checked> OWNER
+                            </label>
+                            <label style="display:flex;align-items:center;gap:8px;padding:10px 16px;border:1px solid #dcdfe6;border-radius:8px;cursor:pointer;">
+                                <input type="radio" name="memberRole"> DEVELOPER
+                            </label>
+                            <label style="display:flex;align-items:center;gap:8px;padding:10px 16px;border:1px solid #dcdfe6;border-radius:8px;cursor:pointer;">
+                                <input type="radio" name="memberRole"> REPORTER
+                            </label>
+                        </div>
+                    </div>
+                    <div style="padding:12px 16px;background:#f5f7fa;border-radius:8px;margin-top:12px;font-size:13px;color:#606266;line-height:1.8;">
+                        <div style="font-weight:500;margin-bottom:4px;">角色权限说明：</div>
+                        <ul style="margin:0;padding-left:18px;">
+                            <li><b>OWNER</b>：项目配置、成员与策略管理</li>
+                            <li><b>DEVELOPER</b>：维护环境变量，触发测试环境发布</li>
+                            <li><b>REPORTER</b>：只读访问，不能修改配置</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <el-button @click="showMemberDialog = false">取消</el-button>
+                    <el-button type="primary" @click="showMemberDialog = false">确认添加</el-button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 新增环境变量弹窗 -->
+        <div class="modal-overlay" v-if="showVariableDialog" @click.self="showVariableDialog = false">
+            <div class="modal-content" style="max-width:500px;">
+                <div class="modal-header">
+                    <div style="font-size:18px;font-weight:600;"><i class="fas fa-shield-alt" style="color:var(--primary-color);margin-right:8px;"></i>新增环境变量</div>
+                    <i class="fas fa-times" style="cursor:pointer;font-size:20px;color:#909399;" @click="showVariableDialog = false"></i>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">环境 <span style="color:#f56c6c;">*</span></label>
+                        <div style="display:flex;gap:12px;">
+                            <label style="display:flex;align-items:center;gap:8px;padding:10px 16px;border:1px solid #67c23a;border-radius:8px;cursor:pointer;background:#f0f9eb;">
+                                <input type="radio" name="varEnv" checked> dev
+                            </label>
+                            <label style="display:flex;align-items:center;gap:8px;padding:10px 16px;border:1px solid #e6a23c;border-radius:8px;cursor:pointer;">
+                                <input type="radio" name="varEnv"> test
+                            </label>
+                            <label style="display:flex;align-items:center;gap:8px;padding:10px 16px;border:1px solid #f56c6c;border-radius:8px;cursor:pointer;">
+                                <input type="radio" name="varEnv"> prod
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">变量 Key <span style="color:#f56c6c;">*</span></label>
+                        <input type="text" class="form-input" placeholder="如 SPRING_PROFILES_ACTIVE">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">变量值 <span style="color:#f56c6c;">*</span></label>
+                        <textarea class="form-input" style="height:80px;resize:vertical;" placeholder="请输入变量值"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                            <input type="checkbox"> <span>脱敏显示（值将用 ****** 替代展示）</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <el-button @click="showVariableDialog = false">取消</el-button>
+                    <el-button type="primary" @click="showVariableDialog = false">保存变量</el-button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 新增分支策略弹窗 -->
+        <div class="modal-overlay" v-if="showPolicyDialog" @click.self="showPolicyDialog = false">
+            <div class="modal-content" style="max-width:560px;">
+                <div class="modal-header">
+                    <div style="font-size:18px;font-weight:600;"><i class="fas fa-code-branch" style="color:var(--primary-color);margin-right:8px;"></i>新增分支策略</div>
+                    <i class="fas fa-times" style="cursor:pointer;font-size:20px;color:#909399;" @click="showPolicyDialog = false"></i>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">分支匹配规则 <span style="color:#f56c6c;">*</span></label>
+                        <input type="text" class="form-input" placeholder="如 release/* 或 hotfix/*">
+                        <div style="font-size:12px;color:#909399;margin-top:6px;">支持通配符 * 匹配多个字符，如 release/* 匹配 release/v1.0、release/v2.0 等</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">匹配示例</label>
+                        <div style="padding:10px 14px;background:#f5f7fa;border-radius:8px;font-size:13px;color:#606266;">
+                            根据输入的规则自动显示匹配的分支示例
+                        </div>
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                                <input type="checkbox" checked> <span>允许自动部署</span>
+                            </label>
+                            <div style="font-size:12px;color:#909399;margin-top:4px;margin-left:24px;">匹配的分支有新提交时自动触发构建</div>
+                        </div>
+                        <div class="form-group">
+                            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                                <input type="checkbox"> <span>需要人工审批</span>
+                            </label>
+                            <div style="font-size:12px;color:#909399;margin-top:4px;margin-left:24px;">部署前需管理员确认</div>
+                        </div>
+                    </div>
+                    <div style="padding:12px 16px;background:#fef0f0;border-radius:8px;font-size:13px;color:#f56c6c;line-height:1.8;">
+                        <div style="font-weight:500;margin-bottom:4px;"><i class="fas fa-exclamation-circle"></i> 提示：</div>
+                        分支策略表达式非法时将阻止保存。正则规则示例：release/*、hotfix/*、feature/*、develop、master
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <el-button @click="showPolicyDialog = false">取消</el-button>
+                    <el-button type="primary" @click="showPolicyDialog = false">保存策略</el-button>
                 </div>
             </div>
         </div>
@@ -1909,7 +2044,9 @@
                         <el-table-column prop="name" label="凭证名称" min-width="180"></el-table-column>
                         <el-table-column prop="type" label="类型" width="160">
                             <template #default="{row}">
-                                <span class="status-tag status-info">{{row.type}}</span>
+                                <span v-if="row.type === 'SSH_KEY'" class="status-tag" style="background:#e8f5e9;color:#2e7d32;"><i class="fas fa-key"></i> SSH_KEY</span>
+                                <span v-else-if="row.type === 'ACCESS_TOKEN'" class="status-tag status-info"><i class="fas fa-token"></i> ACCESS_TOKEN</span>
+                                <span v-else class="status-tag" style="background:#fff3e0;color:#e65100;"><i class="fas fa-user-lock"></i> USERNAME_PASSWORD</span>
                             </template>
                         </el-table-column>
                         <el-table-column prop="account" label="账号/标识" min-width="180"></el-table-column>
@@ -1919,7 +2056,7 @@
                         <el-table-column label="操作" width="180" fixed="right">
                             <template #default="{row}">
                                 <el-button type="primary" size="small" link>编辑</el-button>
-                                <el-button type="primary" size="small" link>查看详情</el-button>
+                                <el-button type="primary" size="small" link @click="showCredentialDetail = true">查看详情</el-button>
                                 <el-button type="danger" size="small" link :disabled="row.referencedBy > 0">删除</el-button>
                             </template>
                         </el-table-column>
@@ -1971,6 +2108,57 @@
                             <el-button type="success" @click="navigateTo('project-create')">去项目中选择</el-button>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 凭证详情弹窗 -->
+        <div class="modal-overlay" v-if="showCredentialDetail" @click.self="showCredentialDetail = false">
+            <div class="modal-content" style="max-width:480px;">
+                <div class="modal-header">
+                    <div style="font-size:18px;font-weight:600;"><i class="fas fa-key" style="color:var(--primary-color);margin-right:8px;"></i>凭证详情</div>
+                    <div style="display:flex;align-items:center;gap:16px;">
+                        <span class="status-tag status-info">ACCESS_TOKEN</span>
+                        <i class="fas fa-times" style="cursor:pointer;font-size:20px;color:#909399;" @click="showCredentialDetail = false"></i>
+                    </div>
+                </div>
+                <div class="modal-body">
+                    <div style="display:grid;gap:16px;">
+                        <div>
+                            <div style="font-size:12px;color:#909399;margin-bottom:4px;">凭证名称</div>
+                            <div style="font-weight:500;">公司主 Git Token</div>
+                        </div>
+                        <div>
+                            <div style="font-size:12px;color:#909399;margin-bottom:4px;">账号/标识</div>
+                            <div style="font-weight:500;">gitlab-ci-token</div>
+                        </div>
+                        <div>
+                            <div style="font-size:12px;color:#909399;margin-bottom:4px;">敏感内容</div>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <div style="padding:8px 12px;background:#f5f7fa;border-radius:6px;font-family:monospace;">glpat-****************************</div>
+                                <el-button type="primary" link size="small"><i class="fas fa-eye"></i> 显示</el-button>
+                            </div>
+                            <div style="font-size:12px;color:#909399;margin-top:4px;"><i class="fas fa-lock"></i> 已加密存储，详情页默认脱敏显示</div>
+                        </div>
+                        <div>
+                            <div style="font-size:12px;color:#909399;margin-bottom:4px;">描述</div>
+                            <div style="color:#606266;">用于 drp-api、drp-auth 等服务拉取 GitLab 仓库代码。</div>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                            <div>
+                                <div style="font-size:12px;color:#909399;margin-bottom:4px;">创建时间</div>
+                                <div>2026-04-03 14:10</div>
+                            </div>
+                            <div>
+                                <div style="font-size:12px;color:#909399;margin-bottom:4px;">关联项目</div>
+                                <div style="color:var(--primary-color);">2 个项目</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <el-button @click="showCredentialDetail = false">关闭</el-button>
+                    <el-button type="primary" @click="showCredentialDetail = false">编辑凭证</el-button>
                 </div>
             </div>
         </div>
@@ -2827,6 +3015,10 @@
                 const showDeployLog = ref(false);
                 const showRollbackDialog = ref(false);
                 const showServerDialog = ref(false);
+                const showMemberDialog = ref(false);
+                const showVariableDialog = ref(false);
+                const showPolicyDialog = ref(false);
+                const showCredentialDetail = ref(false);
 
                 const loginForm = reactive({
                     username: '',
@@ -3108,6 +3300,10 @@
                     showDeployLog,
                     showRollbackDialog,
                     showServerDialog,
+                    showMemberDialog,
+                    showVariableDialog,
+                    showPolicyDialog,
+                    showCredentialDetail,
                     loginForm,
                     projectForm,
                     projectDetailTab,

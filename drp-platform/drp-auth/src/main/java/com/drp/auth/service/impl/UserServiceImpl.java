@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.drp.auth.dto.*;
 import com.drp.auth.entity.SysRole;
+import com.drp.user.api.dto.SimpleUserDTO;
 import com.drp.auth.entity.SysUser;
 import com.drp.auth.entity.SysUserRole;
 import com.drp.auth.exception.AuthException;
@@ -253,6 +254,26 @@ public class UserServiceImpl implements UserService {
         sysUserRepository.updateById(user);
 
         log.info("重置密码成功 | userId: {}", userId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<SimpleUserDTO> listAllSimple() {
+        LambdaQueryWrapper<SysUser> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(SysUser::getDeleted, false);
+        wrapper.orderByDesc(SysUser::getId);
+
+        List<SysUser> users = sysUserRepository.selectList(wrapper);
+
+        return users.stream()
+                .map(user -> {
+                    SimpleUserDTO dto = new SimpleUserDTO();
+                    dto.setId(user.getId());
+                    dto.setUsername(user.getUsername());
+                    dto.setRealName(user.getRealName());
+                    return dto;
+                })
+                .collect(Collectors.toList());
     }
 
     private UserDTO buildUserDTO(SysUser user) {

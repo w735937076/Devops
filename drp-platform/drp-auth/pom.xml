@@ -24,10 +24,23 @@
             <version>${project.parent.version}</version>
         </dependency>
 
+        <!-- 引入用户API模块 -->
+        <dependency>
+            <groupId>com.drp</groupId>
+            <artifactId>drp-user-api</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+
         <!-- Spring Boot Web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- Spring Cloud OpenFeign -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
         </dependency>
 
         <!-- Spring Boot Security -->

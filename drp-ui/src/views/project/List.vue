@@ -134,8 +134,9 @@
             </template>
           </el-table-column>
           <el-table-column prop="updateTime" label="最近更新" width="170" />
-          <el-table-column label="操作" width="180" fixed="right">
+          <el-table-column label="操作" width="220" fixed="right">
             <template #default="{ row }">
+              <el-button type="primary" link @click="$router.push(`/projects/${row.id}`)">详情</el-button>
               <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
               <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
             </template>

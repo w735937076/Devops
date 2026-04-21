@@ -4,12 +4,14 @@ import com.drp.auth.dto.*;
 import com.drp.auth.service.UserService;
 import com.drp.common.dto.PageResponse;
 import com.drp.common.result.Result;
+import com.drp.user.api.dto.SimpleUserDTO;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -114,5 +116,14 @@ public class UserController {
         log.info("重置密码 | userId: {}", id);
         userService.resetPassword(id, body.get("newPassword"));
         return Result.success("密码重置成功");
+    }
+
+    /**
+     * 获取所有用户（简化信息，用于下拉选择）
+     */
+    @GetMapping("/simple-list")
+    @PreAuthorize("isAuthenticated()")
+    public Result<List<SimpleUserDTO>> listAllSimple() {
+        return Result.success(userService.listAllSimple());
     }
 }
