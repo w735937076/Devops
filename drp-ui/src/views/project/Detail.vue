@@ -166,28 +166,83 @@
         <div class="card-header">
           <div class="card-title"><el-icon><Key /></el-icon> 环境变量</div>
           <div style="display: flex; gap: 8px">
-            <el-select v-model="filterEnv" placeholder="按环境筛选" clearable style="width: 120px">
+            <el-select v-model="filterEnv" placeholder="按环境筛选" clearable style="width: 120px" @change="loadVariables">
               <el-option label="开发环境" value="dev" />
               <el-option label="测试环境" value="test" />
               <el-option label="生产环境" value="prod" />
             </el-select>
-            <el-button type="primary">
+            <el-button type="primary" @click="showVariableDialog = true">
               <el-icon><Plus /></el-icon> 新增变量
             </el-button>
           </div>
         </div>
-        <el-empty description="环境变量功能开发中" />
+        <el-table v-loading="variableLoading" :data="variableList" stripe>
+          <el-table-column prop="envName" label="环境" width="120">
+            <template #default="{ row }">
+              <span class="status-tag" :class="getEnvClass(row.envCode)">{{ row.envName }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="varKey" label="变量名" min-width="180">
+            <template #default="{ row }">
+              <span style="font-family: monospace; font-weight: 500">{{ row.varKey }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="varValue" label="变量值" min-width="200">
+            <template #default="{ row }">
+              <span v-if="row.isSecret == 1" style="color: #909399">********</span>
+              <span v-else style="font-family: monospace">{{ row.varValue }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="isSecretDesc" label="脱敏" width="80">
+            <template #default="{ row }">
+              <el-tag v-if="row.isSecret === 1" type="warning" size="small">是</el-tag>
+              <el-tag v-else type="info" size="small">否</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="createTime" label="创建时间" width="170" />
+          <el-table-column label="操作" width="160" fixed="right">
+            <template #default="{ row }">
+              <el-button type="primary" link @click="handleEditVariable(row)">编辑</el-button>
+              <el-button type="danger" link @click="handleDeleteVariable(row)">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
       </div>
 
       <!-- 分支策略 Tab -->
       <div v-show="activeTab === 'policies'" class="tab-content">
         <div class="card-header">
           <div class="card-title"><el-icon><Connection /></el-icon> 分支策略</div>
-          <el-button type="primary">
+          <el-button type="primary" @click="showPolicyDialog = true">
             <el-icon><Plus /></el-icon> 新增策略
           </el-button>
         </div>
-        <el-empty description="分支策略功能开发中" />
+        <el-table v-loading="policyLoading" :data="policyList" stripe>
+          <el-table-column prop="branchPattern" label="分支匹配模式" min-width="200">
+            <template #default="{ row }">
+              <code class="pattern-code">{{ row.branchPattern }}</code>
+            </template>
+          </el-table-column>
+          <el-table-column prop="allowAutoDeployDesc" label="自动部署" width="120">
+            <template #default="{ row }">
+              <el-tag v-if="row.allowAutoDeploy === 1" type="success" size="small">允许</el-tag>
+              <el-tag v-else type="info" size="small">禁止</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="requireApprovalDesc" label="需要审批" width="120">
+            <template #default="{ row }">
+              <el-tag v-if="row.requireApproval === 1" type="warning" size="small">是</el-tag>
+              <el-tag v-else type="info" size="small">否</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="createTime" label="创建时间" width="170" />
+          <el-table-column label="操作" width="160" fixed="right">
+            <template #default="{ row }">
+              <el-button type="primary" link @click="handleEditPolicy(row)">编辑</el-button>
+              <el-button type="danger" link @click="handleDeletePolicy(row)">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
       </div>
     </div>
 
@@ -245,6 +300,55 @@
         <el-button type="primary" @click="handleUpdateRole" :loading="submitLoading">保存</el-button>
       </template>
     </el-dialog>
+
+    <!-- 环境变量对话框 -->
+    <el-dialog v-model="showVariableDialog" :title="editingVariable ? '编辑环境变量' : '新增环境变量'" width="500px" destroy-on-close>
+      <el-form :model="variableForm" label-width="100px">
+        <el-form-item label="环境" required>
+          <el-select v-model="variableForm.envCode" placeholder="请选择环境" style="width: 100%">
+            <el-option label="开发环境 (dev)" value="dev" />
+            <el-option label="测试环境 (test)" value="test" />
+            <el-option label="生产环境 (prod)" value="prod" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="变量名" required>
+          <el-input v-model="variableForm.varKey" placeholder="如: DATABASE_URL" />
+        </el-form-item>
+        <el-form-item label="变量值" required>
+          <el-input v-model="variableForm.varValue" placeholder="请输入变量值" />
+        </el-form-item>
+        <el-form-item label="脱敏显示">
+          <el-switch v-model="variableForm.isSecret" :active-value="1" :inactive-value="0" />
+          <span style="margin-left: 12px; color: #909399; font-size: 12px">开启后变量值将显示为 ********</span>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showVariableDialog = false">取消</el-button>
+        <el-button type="primary" @click="handleSaveVariable" :loading="submitLoading">保存</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 分支策略对话框 -->
+    <el-dialog v-model="showPolicyDialog" :title="editingPolicy ? '编辑分支策略' : '新增分支策略'" width="550px" destroy-on-close>
+      <el-form :model="policyForm" label-width="120px">
+        <el-form-item label="分支匹配模式" required>
+          <el-input v-model="policyForm.branchPattern" placeholder="如: release/* 或 hotfix/*" />
+          <div style="color: #909399; font-size: 12px; margin-top: 4px">支持通配符 * 匹配任意字符，如 release/* 匹配 release/v1.0</div>
+        </el-form-item>
+        <el-form-item label="自动部署">
+          <el-switch v-model="policyForm.allowAutoDeploy" :active-value="1" :inactive-value="0" />
+          <span style="margin-left: 12px; color: #909399; font-size: 12px">匹配的分支是否允许自动触发部署</span>
+        </el-form-item>
+        <el-form-item label="需要人工审批">
+          <el-switch v-model="policyForm.requireApproval" :active-value="1" :inactive-value="0" />
+          <span style="margin-left: 12px; color: #909399; font-size: 12px">部署前是否需要人工审批确认</span>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showPolicyDialog = false">取消</el-button>
+        <el-button type="primary" @click="handleSavePolicy" :loading="submitLoading">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -259,9 +363,19 @@ import {
   updateProjectMember,
   removeProjectMember,
   getAvailableUsers,
+  getEnvVariables,
+  createEnvVariable,
+  updateEnvVariable,
+  deleteEnvVariable,
+  getBranchPolicies,
+  createBranchPolicy,
+  updateBranchPolicy,
+  deleteBranchPolicy,
   type Project,
   type ProjectMember,
-  type MemberRole
+  type MemberRole,
+  type EnvVariable,
+  type BranchPolicy
 } from '@/api/project'
 
 const route = useRoute()
@@ -288,7 +402,30 @@ const projectName = computed(() => projectDetail.value?.name || '项目详情')
 // 对话框状态
 const showMemberDialog = ref(false)
 const showRoleDialog = ref(false)
+const showVariableDialog = ref(false)
+const showPolicyDialog = ref(false)
 const currentMember = ref<ProjectMember | null>(null)
+
+// 环境变量相关
+const variableLoading = ref(false)
+const variableList = ref<EnvVariable[]>([])
+const editingVariable = ref<EnvVariable | null>(null)
+const variableForm = reactive({
+  envCode: 'dev' as 'dev' | 'test' | 'prod',
+  varKey: '',
+  varValue: '',
+  isSecret: 0
+})
+
+// 分支策略相关
+const policyLoading = ref(false)
+const policyList = ref<BranchPolicy[]>([])
+const editingPolicy = ref<BranchPolicy | null>(null)
+const policyForm = reactive({
+  branchPattern: '',
+  allowAutoDeploy: 0,
+  requireApproval: 0
+})
 
 // 成员表单
 const memberForm = reactive({
@@ -415,6 +552,179 @@ function handleEdit() {
   router.push({ name: 'ProjectList' })
 }
 
+// ============ 环境变量相关 ============
+
+async function loadVariables() {
+  const id = Number(route.params.id)
+  if (!id) return
+
+  variableLoading.value = true
+  try {
+    variableList.value = await getEnvVariables(id, filterEnv.value || undefined)
+    variableCount.value = variableList.value.length
+  } catch (error) {
+    console.error('加载环境变量失败:', error)
+  } finally {
+    variableLoading.value = false
+  }
+}
+
+function handleEditVariable(row: EnvVariable) {
+  editingVariable.value = row
+  variableForm.envCode = row.envCode as 'dev' | 'test' | 'prod'
+  variableForm.varKey = row.varKey
+  variableForm.varValue = row.varValue
+  variableForm.isSecret = row.isSecret
+  showVariableDialog.value = true
+}
+
+async function handleSaveVariable() {
+  if (!variableForm.varKey || !variableForm.varValue) {
+    ElMessage.warning('请填写完整的变量信息')
+    return
+  }
+
+  const id = Number(route.params.id)
+  submitLoading.value = true
+  try {
+    if (editingVariable.value) {
+      await updateEnvVariable(id, editingVariable.value.id, {
+        envCode: variableForm.envCode,
+        varKey: variableForm.varKey,
+        varValue: variableForm.varValue,
+        isSecret: variableForm.isSecret
+      })
+      ElMessage.success('更新成功')
+    } else {
+      await createEnvVariable(id, {
+        envCode: variableForm.envCode,
+        varKey: variableForm.varKey,
+        varValue: variableForm.varValue,
+        isSecret: variableForm.isSecret
+      })
+      ElMessage.success('创建成功')
+    }
+    showVariableDialog.value = false
+    editingVariable.value = null
+    resetVariableForm()
+    loadVariables()
+  } catch (error: any) {
+    ElMessage.error(error.message || '保存失败')
+  } finally {
+    submitLoading.value = false
+  }
+}
+
+async function handleDeleteVariable(row: EnvVariable) {
+  try {
+    await ElMessageBox.confirm(`确定要删除变量「${row.varKey}」吗？`, '提示', { type: 'warning' })
+    const id = Number(route.params.id)
+    await deleteEnvVariable(id, row.id)
+    ElMessage.success('删除成功')
+    loadVariables()
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      console.error('删除变量失败:', error)
+    }
+  }
+}
+
+function resetVariableForm() {
+  variableForm.envCode = 'dev'
+  variableForm.varKey = ''
+  variableForm.varValue = ''
+  variableForm.isSecret = 0
+}
+
+// ============ 分支策略相关 ============
+
+async function loadPolicies() {
+  const id = Number(route.params.id)
+  if (!id) return
+
+  policyLoading.value = true
+  try {
+    policyList.value = await getBranchPolicies(id)
+    policyCount.value = policyList.value.length
+  } catch (error) {
+    console.error('加载分支策略失败:', error)
+  } finally {
+    policyLoading.value = false
+  }
+}
+
+function handleEditPolicy(row: BranchPolicy) {
+  editingPolicy.value = row
+  policyForm.branchPattern = row.branchPattern
+  policyForm.allowAutoDeploy = row.allowAutoDeploy
+  policyForm.requireApproval = row.requireApproval
+  showPolicyDialog.value = true
+}
+
+async function handleSavePolicy() {
+  if (!policyForm.branchPattern) {
+    ElMessage.warning('请填写分支匹配模式')
+    return
+  }
+
+  const id = Number(route.params.id)
+  submitLoading.value = true
+  try {
+    if (editingPolicy.value) {
+      await updateBranchPolicy(id, editingPolicy.value.id, {
+        branchPattern: policyForm.branchPattern,
+        allowAutoDeploy: policyForm.allowAutoDeploy,
+        requireApproval: policyForm.requireApproval
+      })
+      ElMessage.success('更新成功')
+    } else {
+      await createBranchPolicy(id, {
+        branchPattern: policyForm.branchPattern,
+        allowAutoDeploy: policyForm.allowAutoDeploy,
+        requireApproval: policyForm.requireApproval
+      })
+      ElMessage.success('创建成功')
+    }
+    showPolicyDialog.value = false
+    editingPolicy.value = null
+    resetPolicyForm()
+    loadPolicies()
+  } catch (error: any) {
+    ElMessage.error(error.message || '保存失败')
+  } finally {
+    submitLoading.value = false
+  }
+}
+
+async function handleDeletePolicy(row: BranchPolicy) {
+  try {
+    await ElMessageBox.confirm(`确定要删除策略「${row.branchPattern}」吗？`, '提示', { type: 'warning' })
+    const id = Number(route.params.id)
+    await deleteBranchPolicy(id, row.id)
+    ElMessage.success('删除成功')
+    loadPolicies()
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      console.error('删除策略失败:', error)
+    }
+  }
+}
+
+function resetPolicyForm() {
+  policyForm.branchPattern = ''
+  policyForm.allowAutoDeploy = 0
+  policyForm.requireApproval = 0
+}
+
+// 监听 Tab 切换
+watch(activeTab, (tab) => {
+  if (tab === 'variables') {
+    loadVariables()
+  } else if (tab === 'policies') {
+    loadPolicies()
+  }
+})
+
 // 工具函数：获取角色样式
 function getRoleClass(role: string) {
   const map: Record<string, string> = {
@@ -423,6 +733,16 @@ function getRoleClass(role: string) {
     REPORTER: 'status-info'
   }
   return map[role] || 'status-info'
+}
+
+// 工具函数：获取环境样式
+function getEnvClass(envCode: string) {
+  const map: Record<string, string> = {
+    dev: 'status-success',
+    test: 'status-warning',
+    prod: 'status-danger'
+  }
+  return map[envCode] || 'status-info'
 }
 
 // 工具函数：获取头像颜色
@@ -630,6 +950,19 @@ onMounted(() => {
 .status-info {
   background: #ecf5ff;
   color: #409eff;
+}
+
+.status-warning {
+  background: #fdf6ec;
+  color: #e6a23c;
+}
+
+.pattern-code {
+  padding: 4px 8px;
+  background: #f5f7fa;
+  border-radius: 4px;
+  font-family: monospace;
+  color: #606266;
 }
 
 .status-dot {

@@ -13,6 +13,8 @@ import com.drp.project.entity.Project;
 import com.drp.project.enums.ProjectType;
 import com.drp.project.repository.CredentialRepository;
 import com.drp.project.repository.ProjectRepository;
+import com.drp.project.service.BranchPolicyService;
+import com.drp.project.service.EnvVariableService;
 import com.drp.project.service.ProjectService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,10 +37,17 @@ public class ProjectServiceImpl implements ProjectService {
 
     private final ProjectRepository projectRepository;
     private final CredentialRepository credentialRepository;
+    private final EnvVariableService envVariableService;
+    private final BranchPolicyService branchPolicyService;
 
-    public ProjectServiceImpl(ProjectRepository projectRepository, CredentialRepository credentialRepository) {
+    public ProjectServiceImpl(ProjectRepository projectRepository,
+                              CredentialRepository credentialRepository,
+                              EnvVariableService envVariableService,
+                              BranchPolicyService branchPolicyService) {
         this.projectRepository = projectRepository;
         this.credentialRepository = credentialRepository;
+        this.envVariableService = envVariableService;
+        this.branchPolicyService = branchPolicyService;
     }
 
     @Override
@@ -200,6 +209,10 @@ public class ProjectServiceImpl implements ProjectService {
                 dto.setCredentialName(credential.getName());
             }
         }
+
+        // 填充统计数据
+        dto.setVariableCount(envVariableService.countByProjectId(project.getId()));
+        dto.setPolicyCount(branchPolicyService.countByProjectId(project.getId()));
 
         return dto;
     }

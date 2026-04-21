@@ -46,6 +46,16 @@ public class ProjectDTO implements Serializable {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime updateTime;
 
+    /**
+     * 环境变量数量
+     */
+    private Long variableCount;
+
+    /**
+     * 分支策略数量
+     */
+    private Long policyCount;
+
     // ==================== Getter & Setter ====================
 
     public Long getId() {
@@ -166,5 +176,21 @@ public class ProjectDTO implements Serializable {
 
     public void setUpdateTime(LocalDateTime updateTime) {
         this.updateTime = updateTime;
+    }
+
+    public Long getVariableCount() {
+        return variableCount;
+    }
+
+    public void setVariableCount(Long variableCount) {
+        this.variableCount = variableCount;
+    }
+
+    public Long getPolicyCount() {
+        return policyCount;
+    }
+
+    public void setPolicyCount(Long policyCount) {
+        this.policyCount = policyCount;
     }
 }

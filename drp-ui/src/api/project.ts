@@ -191,3 +191,122 @@ export interface SimpleUser {
 export function getAvailableUsers() {
   return get<SimpleUser[]>('/users/simple-list')
 }
+
+// =====================================================
+// 环境变量管理
+// =====================================================
+
+/** 环境变量信息 */
+export interface EnvVariable {
+  id: number
+  projectId: number
+  envCode: string
+  envName: string
+  varKey: string
+  varValue: string
+  isSecret: number
+  isSecretDesc: string
+  createTime: string
+}
+
+/** 创建环境变量参数 */
+export interface CreateEnvVariableParams {
+  envCode: 'dev' | 'test' | 'prod'
+  varKey: string
+  varValue: string
+  isSecret?: number
+}
+
+/** 更新环境变量参数 */
+export interface UpdateEnvVariableParams {
+  envCode: 'dev' | 'test' | 'prod'
+  varKey: string
+  varValue: string
+  isSecret: number
+}
+
+/**
+ * 获取项目环境变量列表
+ */
+export function getEnvVariables(projectId: number, env?: string) {
+  return get<EnvVariable[]>(`/projects/${projectId}/variables`, { env })
+}
+
+/**
+ * 创建环境变量
+ */
+export function createEnvVariable(projectId: number, data: CreateEnvVariableParams) {
+  return post<EnvVariable>(`/projects/${projectId}/variables`, data)
+}
+
+/**
+ * 更新环境变量
+ */
+export function updateEnvVariable(projectId: number, varId: number, data: UpdateEnvVariableParams) {
+  return put<EnvVariable>(`/projects/${projectId}/variables/${varId}`, data)
+}
+
+/**
+ * 删除环境变量
+ */
+export function deleteEnvVariable(projectId: number, varId: number) {
+  return del(`/projects/${projectId}/variables/${varId}`)
+}
+
+// =====================================================
+// 分支策略管理
+// =====================================================
+
+/** 分支策略信息 */
+export interface BranchPolicy {
+  id: number
+  projectId: number
+  branchPattern: string
+  allowAutoDeploy: number
+  allowAutoDeployDesc: string
+  requireApproval: number
+  requireApprovalDesc: string
+  createTime: string
+}
+
+/** 创建分支策略参数 */
+export interface CreateBranchPolicyParams {
+  branchPattern: string
+  allowAutoDeploy?: number
+  requireApproval?: number
+}
+
+/** 更新分支策略参数 */
+export interface UpdateBranchPolicyParams {
+  branchPattern: string
+  allowAutoDeploy: number
+  requireApproval: number
+}
+
+/**
+ * 获取项目分支策略列表
+ */
+export function getBranchPolicies(projectId: number) {
+  return get<BranchPolicy[]>(`/projects/${projectId}/branch-policies`)
+}
+
+/**
+ * 创建分支策略
+ */
+export function createBranchPolicy(projectId: number, data: CreateBranchPolicyParams) {
+  return post<BranchPolicy>(`/projects/${projectId}/branch-policies`, data)
+}
+
+/**
+ * 更新分支策略
+ */
+export function updateBranchPolicy(projectId: number, policyId: number, data: UpdateBranchPolicyParams) {
+  return put<BranchPolicy>(`/projects/${projectId}/branch-policies/${policyId}`, data)
+}
+
+/**
+ * 删除分支策略
+ */
+export function deleteBranchPolicy(projectId: number, policyId: number) {
+  return del(`/projects/${projectId}/branch-policies/${policyId}`)
+}
