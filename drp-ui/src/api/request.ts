@@ -34,6 +34,14 @@ export interface RequestConfig extends AxiosRequestConfig {
   showError?: boolean
 }
 
+/** 分页响应 */
+export interface PageResponse<T> {
+  records: T[]
+  total: number
+  page: number
+  size: number
+}
+
 // =====================================================
 // 创建 Axios 实例
 // =====================================================
