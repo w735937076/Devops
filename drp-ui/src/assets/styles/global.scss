@@ -223,3 +223,170 @@ textarea {
   transform: translateY(-10px);
   opacity: 0;
 }
+
+// =====================================================
+// 自定义 Confirm 对话框样式
+// =====================================================
+.el-message-box {
+  padding: 0;
+  width: 400px;
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+
+  // 标题区域
+  .el-message-box__header {
+    padding: 20px 24px 0;
+    justify-content: center;
+
+    .el-message-box__title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #303133;
+    }
+
+    .el-message-box__headerbtn {
+      top: 16px;
+      right: 16px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      transition: background 0.2s ease;
+
+      &:hover {
+        background: rgba(0, 0, 0, 0.05);
+      }
+
+      .el-message-box__close {
+        color: #909399;
+        font-size: 14px;
+      }
+    }
+  }
+
+  // 内容区域
+  .el-message-box__content {
+    padding: 24px;
+    text-align: center;
+
+    .el-message-box__container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+
+    // 自定义图标容器
+    .el-message-box__status {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+      position: static;
+      transform: none;
+      margin-bottom: 8px;
+
+      &.el-icon {
+        display: none;
+      }
+
+      // SVG问号图标
+      &::before {
+        content: '';
+        display: block;
+        width: 32px;
+        height: 32px;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23667eea' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3'/%3E%3Cline x1='12' y1='17' x2='12.01' y2='17'/%3E%3C/svg%3E");
+        background-size: contain;
+        background-repeat: no-repeat;
+      }
+    }
+
+    .el-message-box__message {
+      padding: 0;
+      margin: 0;
+      font-size: 16px;
+      color: #606266;
+      line-height: 1.6;
+    }
+  }
+
+  // 按钮区域
+  .el-message-box__btns {
+    padding: 0 24px 24px;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+
+    .el-button {
+      min-width: 100px;
+      height: 38px;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: all 0.2s ease;
+
+      &--default {
+        background: #fff;
+        border: 1px solid #dcdfe6;
+        color: #606266;
+
+        &:hover {
+          background: #f5f7fa;
+          border-color: #c0c4cc;
+          color: #303133;
+        }
+      }
+
+      &--primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: #fff;
+
+        &:hover {
+          background: linear-gradient(135deg, #5568d0 0%, #5a3d8a 100%);
+          box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+      }
+    }
+  }
+}
+
+// 遮罩层样式
+.el-overlay {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
+}
+
+// 动画
+.el-overlay {
+  animation: overlayFadeIn 0.2s ease;
+}
+
+.el-message-box {
+  animation: messageBoxZoomIn 0.2s ease;
+}
+
+@keyframes overlayFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes messageBoxZoomIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
