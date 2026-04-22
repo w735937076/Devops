@@ -32,17 +32,17 @@
 │         │                   │                                      │
 │         │              ┌─────┴─────┐                                │
 │         │              │           │                                │
-│         │         ┌────▼───┐  ┌───▼────┐                          │
-│         │         │ drp-   │  │ drp-   │                          │
-│         │         │ auth   │  │project  │                          │
-│         │         │ 认证   │  │ 项目   │                          │
-│         │         │ 服务   │  │ 服务   │                          │
-│         │         └───┬───┘  └───┬───┘                          │
-│         │             │           │                               │
-│         │        ┌─────▼───────────▼─────┐                        │
-│         │        │       drp-common       │                        │
-│         │        │        公共基石         │                        │
-│         │        └───────────────────────┘                        │
+│         │         ┌────▼───┐  ┌───▼────┐  ┌───────────┐         │
+│         │         │ drp-   │  │ drp-   │  │ drp-     │         │
+│         │         │ auth   │  │project  │  │ server   │         │
+│         │         │ 认证   │  │ 项目   │  │ 服务器   │         │
+│         │         │ 服务   │  │ 服务   │  │ 管理     │         │
+│         │         └───┬───┘  └───┬───┘  └───┬─────┘         │
+│         │             │           │            │                  │
+│         │        ┌─────▼───────────▼──────────▼─────┐            │
+│         │        │            drp-common             │            │
+│         │        │             公共基石               │            │
+│         │        └──────────────────────────────────┘            │
 │         │                                                               │
 │         └──────────────────────┐                                   │
 │                                ▼                                    │
@@ -76,6 +76,17 @@
 | 构建工具 | Vite 5.2 | 革新性极速开发体验，HRM 毫秒级响应 |
 | 语言 | TypeScript 5.4 | JavaScript 的铠甲，让类型安全成为习惯 |
 
+### 前端 UI 设计规范
+
+| 类别 | 规范 | 说明 |
+|------|------|------|
+| 主题色 | `#667eea` → `#764ba2` | 紫蓝渐变，贯穿全局 |
+| 中性色 | `#303133` / `#606266` / `#909399` | 文本三层次 |
+| 圆角 | 4px / 8px / 12px | 按组件大小适配 |
+| 阴影 | `0 2px 12px rgba(0,0,0,0.1)` | 卡片与弹层 |
+| 图标 | Font Awesome 6.5 | 统一的图标风格 |
+| 动画 | `cubic-bezier(0.645, 0.045, 0.355, 1)` | 流畅自然 |
+
 ---
 
 ## 模块疆域
@@ -86,12 +97,14 @@ drp-platform/
 ├── drp-user-api        # 用户 API 契约：Feign 接口定义，跨模块通信的"宪法"
 ├── drp-auth            # 认证服务：JWT 令牌颁发、用户注册、角色分配
 ├── drp-project         # 项目服务：项目管理、成员管理、凭证中心
+├── drp-server         # 服务器服务：服务器管理、分组管理、SSH 连接测试、心跳检测
 ├── drp-sql             # SQL 脚本：数据库初始化与迁移 DDL
 └── drp-boot            # 聚合服务：整合所有模块，统一入口
 
 drp-ui/
 ├── src/
 │   ├── api/            # 统一 HTTP 层，封装所有后端接口
+│   ├── components/     # 公共组件：Header、Dialog 等可复用组件
 │   ├── views/          # 页面组件，Vue SFC 的艺术呈现
 │   ├── router/         # 路由配置，SPA 导航的蓝图
 │   ├── stores/         # Pinia 状态树，数据流的中枢
@@ -107,6 +120,7 @@ drp-ui/
 | drp-user-api | 用户服务接口定义 | 被 drp-auth、drp-project 依赖 |
 | drp-auth | 用户认证、角色权限、JWT 令牌 | REST API + Feign |
 | drp-project | 项目全生命周期管理 | REST API |
+| drp-server | 服务器管理、SSH 连接测试、心跳检测 | REST API |
 | drp-sql | 数据库 DDL/DML 脚本 | SQL 文件 |
 | drp-boot | 模块聚合、服务编排 | 无独立接口 |
 
@@ -147,6 +161,16 @@ drp-ui/
 - 保护分支：master/main 分支的守护者
 - 自动化流水线：触发规则 → 自动构建 → 智能部署
 
+### 5. 服务器管理
+
+*精准掌控每一台服务器，让部署有的放矢。*
+
+- 服务器 CRUD：支持多环境分组（dev/test/prod）
+- 灵活认证：密码认证 + SSH 私钥双模式，敏感信息 AES 加密存储
+- 连接测试：一键验证服务器连通性，快速排查问题
+- 心跳检测：60 秒定时巡检，实时感知服务器在线状态
+- 标签系统：自由标记、灵活筛选
+
 ---
 
 ## API 设计
@@ -184,6 +208,28 @@ GET    /api/projects/{id}/members            # 项目成员列表
 POST   /api/projects/{id}/members            # 添加成员
 PUT    /api/projects/{id}/members/{userId}   # 更新成员角色
 DELETE /api/projects/{id}/members/{userId}   # 移除成员
+```
+
+### 服务器服务 `/api/servers`
+
+```
+GET    /api/servers                    # 分页查询服务器
+GET    /api/servers/all                # 获取所有服务器
+GET    /api/servers/{id}              # 服务器详情
+POST   /api/servers                    # 创建服务器
+PUT    /api/servers/{id}               # 更新服务器
+DELETE /api/servers/{id}               # 删除服务器
+POST   /api/servers/{id}/test          # 测试服务器连接
+```
+
+### 服务器分组 `/api/server-groups`
+
+```
+GET    /api/server-groups              # 获取所有分组
+GET    /api/server-groups/{id}        # 分组详情
+POST   /api/server-groups              # 创建分组
+PUT    /api/server-groups/{id}        # 更新分组
+DELETE /api/server-groups/{id}        # 删除分组
 ```
 
 ### 统一响应格式
