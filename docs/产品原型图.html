@@ -1054,6 +1054,9 @@
                 <div class="nav-tab" :class="{active: currentPage.startsWith('build')}" @click="navigateTo('build-list')">
                     <i class="fas fa-hammer"></i> 构建管理
                 </div>
+                <div class="nav-tab" :class="{active: currentPage.startsWith('pipeline')}" @click="navigateTo('pipeline-list')">
+                    <i class="fas fa-stream"></i> 流水线配置
+                </div>
                 <div class="nav-tab" :class="{active: currentPage.startsWith('deploy')}" @click="navigateTo('deploy-list')">
                     <i class="fas fa-cloud-upload-alt"></i> 部署管理
                 </div>
@@ -2250,8 +2253,9 @@
                     </el-table-column>
                     <el-table-column prop="duration" label="耗时" width="100"></el-table-column>
                     <el-table-column prop="time" label="构建时间" width="160"></el-table-column>
-                    <el-table-column label="操作" width="180" fixed="right">
+                    <el-table-column label="操作" width="200" fixed="right">
                         <template #default="{row}">
+                            <el-button type="primary" size="small" link @click="navigateTo('build-detail')">详情</el-button>
                             <el-button type="primary" size="small" link @click="showBuildLog = true">日志</el-button>
                             <el-button type="success" size="small" link v-if="row.status === 'success'">产物</el-button>
                             <el-button type="warning" size="small" link v-if="row.status === 'running'">取消</el-button>
@@ -2353,6 +2357,319 @@
                 <div class="modal-footer">
                     <el-button @click="showBuildDialog = false">取消</el-button>
                     <el-button type="primary" @click="showBuildDialog = false">立即构建</el-button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 构建详情页面 -->
+        <div class="main-container page" :class="{active: currentPage === 'build-detail'}">
+            <div class="page-docs">
+                <h3><i class="fas fa-info-circle"></i> 页面说明 - 构建详情</h3>
+                <div class="doc-section">
+                    <h4>页面目标</h4>
+                    <p>展示单个构建任务的完整信息，包括构建参数、阶段状态、产物信息、环境变量和操作日志。</p>
+                </div>
+                <div class="flow-container">
+                    <div class="flow-node">构建信息</div>
+                    <i class="flow-arrow fas fa-arrow-right"></i>
+                    <div class="flow-node">阶段状态</div>
+                    <i class="flow-arrow fas fa-arrow-right"></i>
+                    <div class="flow-node">产物管理</div>
+                    <i class="flow-arrow fas fa-arrow-right"></i>
+                    <div class="flow-node">操作日志</div>
+                </div>
+            </div>
+
+            <div style="display:flex;gap:16px;margin-bottom:16px;">
+                <el-button @click="navigateTo('build-list')"><i class="fas fa-arrow-left"></i> 返回列表</el-button>
+                <el-button type="primary" v-if="buildDetail.status === 'success'" @click="showBuildLog = true"><i class="fas fa-terminal"></i> 查看日志</el-button>
+                <el-button type="warning" v-if="buildDetail.status === 'running'" @click="handleCancelBuild"><i class="fas fa-stop"></i> 取消构建</el-button>
+                <el-button type="success" v-if="buildDetail.status === 'success'"><i class="fas fa-cloud-upload-alt"></i> 部署</el-button>
+                <el-button type="danger" v-if="buildDetail.status === 'fail'"><i class="fas fa-redo"></i> 重试构建</el-button>
+            </div>
+
+            <!-- 基本信息卡片 -->
+            <div class="card" style="margin-bottom:16px;">
+                <div class="card-header">
+                    <div class="card-title"><i class="fas fa-info-circle"></i> 构建信息</div>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding:16px;">
+                    <div>
+                        <div style="font-size:12px;color:#909399;margin-bottom:4px;">项目</div>
+                        <div style="font-weight:500;">drp-api</div>
+                    </div>
+                    <div>
+                        <div style="font-size:12px;color:#909399;margin-bottom:4px;">版本</div>
+                        <div style="font-weight:500;color:var(--primary-color);">v20260417-a1b2c3d-003</div>
+                    </div>
+                    <div>
+                        <div style="font-size:12px;color:#909399;margin-bottom:4px;">分支</div>
+                        <div style="font-weight:500;"><i class="fas fa-code-branch" style="margin-right:4px;"></i>feature/user-auth</div>
+                    </div>
+                    <div>
+                        <div style="font-size:12px;color:#909399;margin-bottom:4px;">状态</div>
+                        <div><span class="status-tag status-success">成功</span></div>
+                    </div>
+                    <div>
+                        <div style="font-size:12px;color:#909399;margin-bottom:4px;">Commit ID</div>
+                        <div style="font-family:monospace;font-size:13px;">a1b2c3d</div>
+                    </div>
+                    <div>
+                        <div style="font-size:12px;color:#909399;margin-bottom:4px;">触发方式</div>
+                        <div><span style="color:#67c23a;"><i class="fas fa-hand-pointer"></i> 手动</span></div>
+                    </div>
+                    <div>
+                        <div style="font-size:12px;color:#909399;margin-bottom:4px;">触发人</div>
+                        <div>Nick</div>
+                    </div>
+                    <div>
+                        <div style="font-size:12px;color:#909399;margin-bottom:4px;">耗时</div>
+                        <div>2m 34s</div>
+                    </div>
+                </div>
+                <div style="padding:0 16px 16px;">
+                    <div style="font-size:12px;color:#909399;margin-bottom:4px;">Commit 描述</div>
+                    <div style="color:#606266;line-height:1.6;">feat: 添加用户认证模块，支持JWT令牌验证</div>
+                </div>
+            </div>
+
+            <!-- 流水线阶段状态 -->
+            <div class="card" style="margin-bottom:16px;">
+                <div class="card-header">
+                    <div class="card-title"><i class="fas fa-stream"></i> 流水线阶段</div>
+                </div>
+                <div style="padding:20px;">
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+                        <div style="flex:1;">
+                            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                                <span style="font-weight:500;">Checkout</span>
+                                <span style="color:#67c23a;"><i class="fas fa-check-circle"></i> 成功</span>
+                            </div>
+                            <div class="progress-bar" style="height:8px;">
+                                <div class="progress-fill" style="width:100%;background:#67c23a;"></div>
+                            </div>
+                            <div style="font-size:12px;color:#909399;margin-top:4px;">2s</div>
+                        </div>
+                        <i class="fas fa-arrow-right" style="color:#dcdfe6;"></i>
+                        <div style="flex:1;">
+                            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                                <span style="font-weight:500;">Compile</span>
+                                <span style="color:#67c23a;"><i class="fas fa-check-circle"></i> 成功</span>
+                            </div>
+                            <div class="progress-bar" style="height:8px;">
+                                <div class="progress-fill" style="width:100%;background:#67c23a;"></div>
+                            </div>
+                            <div style="font-size:12px;color:#909399;margin-top:4px;">9s</div>
+                        </div>
+                        <i class="fas fa-arrow-right" style="color:#dcdfe6;"></i>
+                        <div style="flex:1;">
+                            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                                <span style="font-weight:500;">Test</span>
+                                <span style="color:#67c23a;"><i class="fas fa-check-circle"></i> 成功</span>
+                            </div>
+                            <div class="progress-bar" style="height:8px;">
+                                <div class="progress-fill" style="width:100%;background:#67c23a;"></div>
+                            </div>
+                            <div style="font-size:12px;color:#909399;margin-top:4px;">12s (23 tests)</div>
+                        </div>
+                        <i class="fas fa-arrow-right" style="color:#dcdfe6;"></i>
+                        <div style="flex:1;">
+                            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                                <span style="font-weight:500;">Package</span>
+                                <span style="color:#67c23a;"><i class="fas fa-check-circle"></i> 成功</span>
+                            </div>
+                            <div class="progress-bar" style="height:8px;">
+                                <div class="progress-fill" style="width:100%;background:#67c23a;"></div>
+                            </div>
+                            <div style="font-size:12px;color:#909399;margin-top:4px;">5s</div>
+                        </div>
+                        <i class="fas fa-arrow-right" style="color:#dcdfe6;"></i>
+                        <div style="flex:1;">
+                            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                                <span style="font-weight:500;">Upload</span>
+                                <span style="color:#67c23a;"><i class="fas fa-check-circle"></i> 成功</span>
+                            </div>
+                            <div class="progress-bar" style="height:8px;">
+                                <div class="progress-fill" style="width:100%;background:#67c23a;"></div>
+                            </div>
+                            <div style="font-size:12px;color:#909399;margin-top:4px;">3s</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 构建产物 -->
+            <div class="card" style="margin-bottom:16px;">
+                <div class="card-header">
+                    <div class="card-title"><i class="fas fa-archive"></i> 构建产物</div>
+                    <el-button size="small" type="primary"><i class="fas fa-download"></i> 下载全部</el-button>
+                </div>
+                <el-table :data="artifacts" style="width:100%">
+                    <el-table-column prop="name" label="产物名称"></el-table-column>
+                    <el-table-column prop="path" label="存储路径" width="300"></el-table-column>
+                    <el-table-column prop="size" label="大小" width="120"></el-table-column>
+                    <el-table-column prop="time" label="创建时间" width="180"></el-table-column>
+                    <el-table-column label="操作" width="120" fixed="right">
+                        <template #default="{row}">
+                            <el-button type="primary" size="small" link><i class="fas fa-download"></i> 下载</el-button>
+                        </template>
+                    </el-table-column>
+                </el-table>
+            </div>
+
+            <!-- 环境变量 -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title"><i class="fas fa-envira"></i> 构建参数</div>
+                </div>
+                <div style="padding:16px;background:#f5f7fa;border-radius:8px;font-family:monospace;font-size:13px;">
+                    <div style="margin-bottom:8px;"><span style="color:#909399;">BUILD_PROJECT</span>=<span style="color:#67c23a;">drp-api</span></div>
+                    <div style="margin-bottom:8px;"><span style="color:#909399;">BUILD_BRANCH</span>=<span style="color:#67c23a;">feature/user-auth</span></div>
+                    <div style="margin-bottom:8px;"><span style="color:#909399;">BUILD_COMMAND</span>=<span style="color:#67c23a;">mvn clean package -DskipTests</span></div>
+                    <div><span style="color:#909399;">MAVEN_OPTS</span>=<span style="color:#67c23a;">-Xmx512m</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 流水线配置页面 -->
+        <div class="main-container page" :class="{active: currentPage === 'pipeline-list'}">
+            <div class="page-docs">
+                <h3><i class="fas fa-info-circle"></i> 页面说明 - 流水线配置</h3>
+                <div class="doc-section">
+                    <h4>页面目标</h4>
+                    <p>管理项目的流水线配置，包括流水线的创建、编辑、删除，以及阶段和步骤的可视化编排。</p>
+                </div>
+                <div class="flow-container">
+                    <div class="flow-node">选择项目</div>
+                    <i class="flow-arrow fas fa-arrow-right"></i>
+                    <div class="flow-node">流水线列表</div>
+                    <i class="flow-arrow fas fa-arrow-right"></i>
+                    <div class="flow-node">编辑配置</div>
+                    <i class="flow-arrow fas fa-arrow-right"></i>
+                    <div class="flow-node">保存启用</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title"><i class="fas fa-stream"></i> 流水线配置</div>
+                    <div style="display:flex;gap:12px;">
+                        <select style="padding:8px 12px;border:1px solid #dcdfe6;border-radius:8px;">
+                            <option>全部项目</option>
+                            <option>drp-api</option>
+                            <option>drp-web</option>
+                        </select>
+                        <el-button type="primary" @click="showPipelineDialog = true"><i class="fas fa-plus"></i> 新建流水线</el-button>
+                    </div>
+                </div>
+                <el-table :data="pipelines" style="width:100%">
+                    <el-table-column prop="id" label="ID" width="80"></el-table-column>
+                    <el-table-column prop="name" label="流水线名称" width="180"></el-table-column>
+                    <el-table-column prop="project" label="所属项目" width="150"></el-table-column>
+                    <el-table-column prop="stages" label="阶段数" width="100">
+                        <template #default="{row}">
+                            <span>{{row.stages}} 个阶段</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="cache" label="缓存" width="100">
+                        <template #default="{row}">
+                            <span v-if="row.cache" style="color:#67c23a;"><i class="fas fa-check"></i> 启用</span>
+                            <span v-else style="color:#909399;"><i class="fas fa-times"></i> 禁用</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="isDefault" label="默认" width="80">
+                        <template #default="{row}">
+                            <span v-if="row.isDefault" class="status-tag status-primary">默认</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="updateTime" label="更新时间" width="180"></el-table-column>
+                    <el-table-column label="操作" width="200" fixed="right">
+                        <template #default="{row}">
+                            <el-button type="primary" size="small" link @click="navigateTo('build-list')">构建</el-button>
+                            <el-button type="primary" size="small" link @click="showPipelineEditDialog = true">编辑</el-button>
+                            <el-button type="danger" size="small" link>删除</el-button>
+                        </template>
+                    </el-table-column>
+                </el-table>
+            </div>
+
+            <!-- 流水线编辑弹窗 -->
+            <div class="modal-overlay" v-if="showPipelineEditDialog" @click.self="showPipelineEditDialog = false">
+                <div class="modal-content" style="max-width:800px;">
+                    <div class="modal-header">
+                        <div style="font-size:18px;font-weight:600;">
+                            <i class="fas fa-edit" style="color:var(--primary-color);margin-right:8px;"></i>
+                            编辑流水线 - 默认流水线
+                        </div>
+                        <i class="fas fa-times" style="cursor:pointer;font-size:20px;color:#909399;" @click="showPipelineEditDialog = false"></i>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label class="form-label">流水线名称</label>
+                            <input type="text" class="form-input" value="默认流水线">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">所属项目</label>
+                            <select class="form-input">
+                                <option selected>drp-api</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" style="display:flex;align-items:center;gap:8px;">
+                                启用缓存
+                                <input type="checkbox" checked style="width:auto;">
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">缓存规则 (JSON)</label>
+                            <textarea class="form-input" rows="3" style="font-family:monospace;">{ "paths": ["/root/.m2/repository", "node_modules"] }</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">流水线阶段</label>
+                            <div style="border:1px solid #e4e7ed;border-radius:8px;padding:16px;background:#f5f7fa;">
+                                <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+                                    <div style="flex:1;background:white;padding:12px;border-radius:6px;border:1px solid #e4e7ed;">
+                                        <div style="font-weight:500;margin-bottom:8px;">1. Checkout</div>
+                                        <div style="font-size:13px;color:#606266;">
+                                            <i class="fas fa-code-branch" style="margin-right:4px;"></i> Git Clone
+                                        </div>
+                                    </div>
+                                    <i class="fas fa-plus-circle" style="color:#67c23a;cursor:pointer;"></i>
+                                </div>
+                                <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+                                    <div style="flex:1;background:white;padding:12px;border-radius:6px;border:1px solid #e4e7ed;">
+                                        <div style="font-weight:500;margin-bottom:8px;">2. Compile</div>
+                                        <div style="font-size:13px;color:#606266;">
+                                            <i class="fas fa-hammer" style="margin-right:4px;"></i> mvn compile (600s)
+                                        </div>
+                                    </div>
+                                    <i class="fas fa-minus-circle" style="color:#f56c6c;cursor:pointer;"></i>
+                                </div>
+                                <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+                                    <div style="flex:1;background:white;padding:12px;border-radius:6px;border:1px solid #e4e7ed;">
+                                        <div style="font-weight:500;margin-bottom:8px;">3. Test</div>
+                                        <div style="font-size:13px;color:#606266;">
+                                            <i class="fas fa-vials" style="margin-right:4px;"></i> mvn test (300s)
+                                        </div>
+                                    </div>
+                                    <i class="fas fa-minus-circle" style="color:#f56c6c;cursor:pointer;"></i>
+                                </div>
+                                <div style="display:flex;align-items:center;gap:12px;">
+                                    <div style="flex:1;background:white;padding:12px;border-radius:6px;border:1px solid #e4e7ed;">
+                                        <div style="font-weight:500;margin-bottom:8px;">4. Package</div>
+                                        <div style="font-size:13px;color:#606266;">
+                                            <i class="fas fa-box" style="margin-right:4px;"></i> mvn package -DskipTests (600s)
+                                        </div>
+                                    </div>
+                                    <i class="fas fa-minus-circle" style="color:#f56c6c;cursor:pointer;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <el-button @click="showPipelineEditDialog = false">取消</el-button>
+                        <el-button type="primary" @click="showPipelineEditDialog = false">保存配置</el-button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -3011,6 +3328,8 @@
                 const showUserMenu = ref(false);
                 const showBuildDialog = ref(false);
                 const showBuildLog = ref(false);
+                const showPipelineDialog = ref(false);
+                const showPipelineEditDialog = ref(false);
                 const showDeployDialog = ref(false);
                 const showDeployLog = ref(false);
                 const showRollbackDialog = ref(false);
@@ -3074,6 +3393,33 @@
                     env: '',
                     workDir: '/opt/drp'
                 });
+
+                const buildDetail = ref({
+                    id: 156,
+                    project: 'drp-api',
+                    version: 'v20260417-a1b2c3d-003',
+                    branch: 'feature/user-auth',
+                    commitId: 'a1b2c3d',
+                    commitMessage: 'feat: 添加用户认证模块，支持JWT令牌验证',
+                    status: 'success',
+                    statusText: '成功',
+                    trigger: 'manual',
+                    triggerBy: 'Nick',
+                    duration: '2m 34s',
+                    createTime: '2026-04-17 10:28:01'
+                });
+
+                const artifacts = ref([
+                    { name: 'drp-api.jar', path: '/data/builds/156/drp-api.jar', size: '45.2 MB', time: '2026-04-17 10:30:34' },
+                    { name: 'drp-api-sources.jar', path: '/data/builds/156/drp-api-sources.jar', size: '12.8 MB', time: '2026-04-17 10:30:34' }
+                ]);
+
+                const pipelines = ref([
+                    { id: 1, name: '默认流水线', project: 'drp-api', stages: 5, cache: true, isDefault: true, updateTime: '2026-04-15 14:30' },
+                    { id: 2, name: '快速构建', project: 'drp-api', stages: 3, cache: true, isDefault: false, updateTime: '2026-04-10 10:20' },
+                    { id: 3, name: '前端构建', project: 'drp-web', stages: 4, cache: true, isDefault: true, updateTime: '2026-04-18 09:15' },
+                    { id: 4, name: 'Python构建', project: 'drp-worker', stages: 3, cache: false, isDefault: true, updateTime: '2026-04-12 16:45' }
+                ]);
 
                 const recentProjects = ref([
                     { name: 'drp-api', code: 'drp-api', type: 'JAVA_MAVEN', status: 'online', statusText: '正常' },
@@ -3225,6 +3571,12 @@
                     ElementPlus.ElMessage.success('连接测试成功！延迟: 23ms');
                 };
 
+                const handleCancelBuild = () => {
+                    ElementPlus.ElMessage.success('构建已取消');
+                    buildDetail.value.status = 'fail';
+                    buildDetail.value.statusText = '已取消';
+                };
+
                 const initCharts = () => {
                     const chartDom = document.getElementById('buildChart');
                     if (!chartDom) return;
@@ -3296,6 +3648,8 @@
                     showUserMenu,
                     showBuildDialog,
                     showBuildLog,
+                    showPipelineDialog,
+                    showPipelineEditDialog,
                     showDeployDialog,
                     showDeployLog,
                     showRollbackDialog,
@@ -3318,6 +3672,9 @@
                     branchPolicies,
                     projectLogs,
                     builds,
+                    buildDetail,
+                    artifacts,
+                    pipelines,
                     deploys,
                     servers,
                     operationLogs,
@@ -3327,7 +3684,8 @@
                     permissions,
                     navigateTo,
                     handleLogin,
-                    testConnection
+                    testConnection,
+                    handleCancelBuild
                 };
             }
         });

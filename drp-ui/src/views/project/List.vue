@@ -134,11 +134,25 @@
             </template>
           </el-table-column>
           <el-table-column prop="updateTime" label="最近更新" width="170" />
-          <el-table-column label="操作" width="220" fixed="right">
+          <el-table-column label="操作" width="150" fixed="right">
             <template #default="{ row }">
-              <el-button type="primary" link @click="$router.push(`/projects/${row.id}`)">详情</el-button>
-              <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
-              <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
+              <div class="action-buttons">
+                <el-tooltip content="详情" placement="top">
+                  <el-button type="primary" circle @click="$router.push(`/projects/${row.id}`)">
+                    <el-icon><Document /></el-icon>
+                  </el-button>
+                </el-tooltip>
+                <el-tooltip content="编辑" placement="top">
+                  <el-button type="primary" circle @click="handleEdit(row)">
+                    <el-icon><Edit /></el-icon>
+                  </el-button>
+                </el-tooltip>
+                <el-tooltip content="删除" placement="top">
+                  <el-button type="danger" circle @click="handleDelete(row)">
+                    <el-icon><Delete /></el-icon>
+                  </el-button>
+                </el-tooltip>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -463,6 +477,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Edit, Delete, Document } from '@element-plus/icons-vue'
 import {
   getProjectPage,
   createProject,
@@ -980,6 +995,21 @@ onMounted(() => {
 
 .status-dot.offline {
   background: #909399;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.action-buttons .el-button.is-circle {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .grid-2 {

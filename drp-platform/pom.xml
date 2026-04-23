@@ -18,6 +18,7 @@
         <module>drp-auth</module>
         <module>drp-project</module>
         <module>drp-server</module>
+        <module>drp-build</module>
         <module>drp-sql</module>
         <module>drp-boot</module>
     </modules>

@@ -85,6 +85,14 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '构建详情', hidden: true }
       },
 
+      // 流水线配置
+      {
+        path: 'pipelines',
+        name: 'PipelineList',
+        component: () => import('@/views/pipeline/List.vue'),
+        meta: { title: '流水线配置', icon: 'Operation' }
+      },
+
       // 部署管理
       {
         path: 'deploys',

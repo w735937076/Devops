@@ -111,12 +111,17 @@ const menuList: MenuItem[] = [
   },
   {
     path: '/builds',
-    title: '构建记录',
+    title: '构建管理',
     icon: 'Box'
   },
   {
+    path: '/pipelines',
+    title: '流水线配置',
+    icon: 'Operation'
+  },
+  {
     path: '/deploys',
-    title: '部署记录',
+    title: '部署管理',
     icon: 'Upload'
   },
   {

@@ -114,6 +114,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/login").permitAll()
                         .requestMatchers("/api/auth/refresh").permitAll()
                         .requestMatchers("/api/auth/captcha").permitAll()
+                        // WebSocket 端点
+                        .requestMatchers("/ws/**").permitAll()
                         // Actuator 端点 (生产环境应限制)
                         .requestMatchers("/actuator/**").permitAll()
                         // 静态资源
