@@ -165,12 +165,17 @@ public class BuildServiceImpl implements BuildService {
             dto.setProjectName(project.getName());
         }
 
-        // 填充流水线名称
+        // 填充流水线信息
         if (record.getPipelineId() != null) {
             Pipeline pipeline = pipelineRepository.selectById(record.getPipelineId());
             if (pipeline != null) {
-                dto.setPipelineName(pipeline.getName());
+                dto.setPipelineInfo(pipeline);
             }
+        }
+
+        // 从构建配置填充构建参数
+        if (record.getBuildConfig() != null && !record.getBuildConfig().isEmpty()) {
+            dto.setBuildParamsFromConfig(record.getBuildConfig());
         }
 
         // 解析产物列表
@@ -287,31 +292,31 @@ public class BuildServiceImpl implements BuildService {
     @Override
     public String generateArtifacts(Project project, BuildRecord record, String workspace) {
         try {
-            // 使用正确的路径分隔符
             java.io.File workDir = new java.io.File(workspace);
             log.info("生成构建产物 | workspace: {} | type: {}", workDir.getAbsolutePath(), project.getType());
             java.util.List<ArtifactDTO> artifactList = new java.util.ArrayList<>();
+            java.time.LocalDateTime now = java.time.LocalDateTime.now();
 
             if ("JAVA_MAVEN".equals(project.getType())) {
-                // Maven 项目，查找 target 目录下的 jar 文件
                 java.io.File targetDir = new java.io.File(workDir, "target");
                 log.info("查找 Maven 产物 | targetDir: {} | exists: {}", targetDir.getAbsolutePath(), targetDir.exists());
                 if (targetDir.exists()) {
-                    findArtifacts(targetDir, ".jar", artifactList);
+                    // 查找 jar 文件
+                    findArtifacts(targetDir, ".jar", artifactList, now);
+                    // 查找 war 文件
+                    findArtifacts(targetDir, ".war", artifactList, now);
                 }
             } else if ("NODE".equals(project.getType())) {
-                // Node 项目，查找 dist 目录
                 java.io.File distDir = new java.io.File(workDir, "dist");
                 log.info("查找 Node 产物 | distDir: {} | exists: {}", distDir.getAbsolutePath(), distDir.exists());
                 if (distDir.exists()) {
-                    findAllFiles(distDir, artifactList);
+                    findAllFiles(distDir, artifactList, now);
                 }
             } else if ("PYTHON".equals(project.getType())) {
-                // Python 项目，查找 dist 目录
                 java.io.File distDir = new java.io.File(workDir, "dist");
                 log.info("查找 Python 产物 | distDir: {} | exists: {}", distDir.getAbsolutePath(), distDir.exists());
                 if (distDir.exists()) {
-                    findAllFiles(distDir, artifactList);
+                    findAllFiles(distDir, artifactList, now);
                 }
             }
 
@@ -321,8 +326,9 @@ public class BuildServiceImpl implements BuildService {
             }
 
             for (ArtifactDTO artifact : artifactList) {
+                String pathToEncode = artifact.getPath().replace("\\", "/");
                 String encodedPath = java.net.URLEncoder.encode(
-                        artifact.getPath(), java.nio.charset.StandardCharsets.UTF_8).replace("+", "%20");
+                        pathToEncode, java.nio.charset.StandardCharsets.UTF_8).replace("+", "%20");
                 artifact.setDownloadUrl(
                         "/api/builds/" + record.getId() + "/artifact/download?path=" + encodedPath);
             }
@@ -334,39 +340,40 @@ public class BuildServiceImpl implements BuildService {
         }
     }
 
-    private void findArtifacts(java.io.File dir, String extension, java.util.List<ArtifactDTO> artifactList) {
+    private void findArtifacts(java.io.File dir, String extension, java.util.List<ArtifactDTO> artifactList, java.time.LocalDateTime createTime) {
         if (dir == null || !dir.exists()) return;
         java.io.File[] files = dir.listFiles();
         if (files == null) return;
         for (java.io.File file : files) {
             if (file.isDirectory()) {
-                // 递归查找子目录，但跳过某些目录以加快速度
                 String name = file.getName().toLowerCase();
                 if (!name.equals("maven-archiver") && !name.equals("maven-status") && !name.equals("generated-sources") && !name.equals("generated-test-sources")) {
-                    findArtifacts(file, extension, artifactList);
+                    findArtifacts(file, extension, artifactList, createTime);
                 }
             } else if (file.getName().endsWith(extension)) {
                 ArtifactDTO artifact = new ArtifactDTO();
                 artifact.setName(file.getName());
                 artifact.setPath(file.getAbsolutePath());
                 artifact.setSize(file.length());
+                artifact.setCreateTime(createTime);
                 artifactList.add(artifact);
             }
         }
     }
 
-    private void findAllFiles(java.io.File dir, java.util.List<ArtifactDTO> artifactList) {
+    private void findAllFiles(java.io.File dir, java.util.List<ArtifactDTO> artifactList, java.time.LocalDateTime createTime) {
         if (dir == null || !dir.exists()) return;
         java.io.File[] files = dir.listFiles();
         if (files == null) return;
         for (java.io.File file : files) {
             if (file.isDirectory()) {
-                findAllFiles(file, artifactList);
+                findAllFiles(file, artifactList, createTime);
             } else {
                 ArtifactDTO artifact = new ArtifactDTO();
                 artifact.setName(file.getName());
                 artifact.setPath(file.getAbsolutePath());
                 artifact.setSize(file.length());
+                artifact.setCreateTime(createTime);
                 artifactList.add(artifact);
             }
         }

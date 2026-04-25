@@ -19,6 +19,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.File;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
@@ -114,15 +115,33 @@ public class BuildController {
             @PathVariable Long id,
             @RequestParam String path) {
 
+        // 解码URL编码的路径
+        String decodedPath = path;
+        try {
+            decodedPath = URLDecoder.decode(path, StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            log.warn("路径解码失败: {}", path);
+        }
+
+        // 规范化路径：将 forward slashes 转换为 backslashes (Windows)
+        String normalizedPath = decodedPath.replace("/", File.separator);
+
         BuildDetailDTO detail = buildService.getBuildDetail(id);
+        final String finalNormalizedPath = normalizedPath;
+        final String finalDecodedPath = decodedPath;
         boolean valid = detail.getArtifacts() != null &&
-                detail.getArtifacts().stream().anyMatch(a -> path.equals(a.getPath()));
+                detail.getArtifacts().stream().anyMatch(a -> {
+                    String artifactPath = a.getPath().replace("/", File.separator);
+                    return artifactPath.equals(finalNormalizedPath) || artifactPath.equals(finalDecodedPath);
+                });
         if (!valid) {
+            log.warn("产物路径验证失败 | id: {} | path: {} | normalized: {}", id, path, normalizedPath);
             return ResponseEntity.notFound().build();
         }
 
-        File file = new File(path);
+        File file = new File(normalizedPath);
         if (!file.exists() || !file.isFile()) {
+            log.warn("产物文件不存在 | path: {}", normalizedPath);
             return ResponseEntity.notFound().build();
         }
 

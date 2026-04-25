@@ -39,6 +39,15 @@ export enum TriggerType {
   API = 'API'
 }
 
+/** 流水线阶段详情 */
+export interface StageDetail {
+  name: string
+  type: string
+  enabled: boolean
+  duration?: number
+  status?: string
+}
+
 /** 构建记录 */
 export interface Build {
   id: number
@@ -60,6 +69,9 @@ export interface Build {
   errorMessage: string
   artifacts: Artifact[]
   createTime: string
+  version?: string
+  stages?: StageDetail[]
+  buildParams?: Record<string, string>
 }
 
 /** 构建产物 */
@@ -68,6 +80,7 @@ export interface Artifact {
   path: string
   size: number
   downloadUrl: string
+  createTime?: string
 }
 
 /** 构建查询参数 */
