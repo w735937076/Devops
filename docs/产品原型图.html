@@ -1031,6 +1031,31 @@
             align-items: center;
             gap: 12px;
         }
+
+        /* 光标样式 */
+        .cursor-pointer {
+            cursor: pointer;
+        }
+
+        /* 服务器状态圆点 */
+        .server-status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        /* 日志表格样式 */
+        .el-table .cursor-pointer:hover {
+            background-color: #f5f7fa;
+        }
+
+        /* Tab 激活样式增强 */
+        .tab-nav .tab-item.active {
+            background: var(--primary-color);
+            color: white;
+            border-radius: 6px;
+        }
     </style>
 </head>
 <body>
@@ -3111,37 +3136,187 @@
                 </div>
             </div>
 
-            <div class="grid-2">
-                <div class="card">
-                    <div class="card-header">
-                        <div class="card-title"><i class="fas fa-history"></i> 操作日志</div>
-                        <el-button size="small">导出</el-button>
-                    </div>
-                    <el-table :data="operationLogs" style="width:100%">
-                        <el-table-column prop="time" label="时间" width="160"></el-table-column>
-                        <el-table-column prop="operator" label="操作人" width="100"></el-table-column>
-                        <el-table-column prop="type" label="操作类型" width="120">
-                            <template #default="{row}">
-                                <span :class="'status-tag status-' + row.typeClass">{{row.type}}</span>
-                            </template>
-                        </el-table-column>
-                        <el-table-column prop="detail" label="详情" min-width="200"></el-table-column>
-                        <el-table-column prop="status" label="状态" width="80">
-                            <template #default="{row}">
-                                <span :class="'status-tag status-' + row.statusClass">{{row.statusText}}</span>
-                            </template>
-                        </el-table-column>
-                    </el-table>
+            <!-- 日志中心 Tab 导航 -->
+            <div class="tab-nav" style="margin-bottom:16px;background:white;border-radius:8px;padding:4px;">
+                <div class="tab-item" :class="{active: logTab === 'operation'}" @click="logTab = 'operation'" style="padding:12px 24px;">
+                    <i class="fas fa-history" style="margin-right:6px;"></i>操作日志
                 </div>
+                <div class="tab-item" :class="{active: logTab === 'build'}" @click="logTab = 'build'" style="padding:12px 24px;">
+                    <i class="fas fa-hammer" style="margin-right:6px;"></i>构建日志
+                </div>
+                <div class="tab-item" :class="{active: logTab === 'realtime'}" @click="logTab = 'realtime'" style="padding:12px 24px;">
+                    <i class="fas fa-desktop" style="margin-right:6px;"></i>实时运行日志
+                </div>
+            </div>
+
+            <!-- 操作日志 Tab -->
+            <div v-if="logTab === 'operation'" class="card">
+                <div class="card-header">
+                    <div class="card-title"><i class="fas fa-history"></i> 操作日志</div>
+                    <el-button size="small" type="success"><i class="fas fa-download"></i> 导出</el-button>
+                </div>
+                <!-- 筛选工具栏 -->
+                <div style="padding:16px;background:#f5f7fa;border-bottom:1px solid #ebeef5;">
+                    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+                        <el-select v-model="logQuery.operationType" placeholder="操作类型" clearable size="small" style="width:120px;">
+                            <el-option label="构建" value="BUILD" />
+                            <el-option label="部署" value="DEPLOY" />
+                            <el-option label="回滚" value="ROLLBACK" />
+                            <el-option label="创建" value="CREATE" />
+                            <el-option label="更新" value="UPDATE" />
+                            <el-option label="删除" value="DELETE" />
+                        </el-select>
+                        <el-select v-model="logQuery.projectId" placeholder="选择项目" clearable size="small" style="width:160px;">
+                            <el-option label="alive-app" value="1" />
+                            <el-option label="drp-platform" value="2" />
+                            <el-option label="drp-ui" value="3" />
+                        </el-select>
+                        <el-date-picker
+                            v-model="logQuery.dateRange"
+                            type="daterange"
+                            range-separator="至"
+                            start-placeholder="开始日期"
+                            end-placeholder="结束日期"
+                            size="small"
+                            style="width:240px;"
+                        />
+                        <el-input v-model="logQuery.keyword" placeholder="搜索关键字" clearable size="small" style="width:180px;">
+                            <template #prefix><i class="fas fa-search"></i></template>
+                        </el-input>
+                        <el-button size="small" type="primary"><i class="fas fa-search"></i> 查询</el-button>
+                        <el-button size="small"><i class="fas fa-refresh"></i> 重置</el-button>
+                    </div>
+                </div>
+                <el-table :data="operationLogs" style="width:100%" @row-click="handleOperationLogClick" :row-class-name="getRowClass">
+                    <el-table-column prop="time" label="时间" width="160"></el-table-column>
+                    <el-table-column prop="operator" label="操作人" width="100"></el-table-column>
+                    <el-table-column prop="type" label="操作类型" width="100">
+                        <template #default="{row}">
+                            <span :class="'status-tag status-' + row.typeClass">{{row.typeText}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="projectName" label="项目" width="140"></el-table-column>
+                    <el-table-column prop="env" label="环境" width="80" align="center">
+                        <template #default="{row}">
+                            <span v-if="row.env" style="background:#ecf5ff;color:#409eff;padding:2px 8px;border-radius:4px;font-size:12px;">{{row.env}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="version" label="版本" width="120"></el-table-column>
+                    <el-table-column prop="detail" label="详情" min-width="200">
+                        <template #default="{row}">
+                            <span style="cursor:pointer;color:#409eff;">{{row.detail}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="status" label="状态" width="80" align="center">
+                        <template #default="{row}">
+                            <span :class="'status-tag status-' + row.statusClass">{{row.statusText}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="duration" label="耗时" width="90" align="right">
+                        <template #default="{row}">
+                            <span v-if="row.duration" style="color:#909399;">{{row.duration}}ms</span>
+                            <span v-else>-</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="操作" width="80" align="center">
+                        <template #default="{row}">
+                            <i class="fas fa-external-link-alt" style="cursor:pointer;color:#409eff;" title="跳转到详情" @click.stop="jumpToDetail(row)"></i>
+                        </template>
+                    </el-table-column>
+                </el-table>
+                <div style="padding:12px;display:flex;justify-content:flex-end;">
+                    <el-pagination
+                        :current-page="1"
+                        :page-sizes="[10, 20, 50, 100]"
+                        :page-size="10"
+                        layout="total, sizes, prev, pager, next"
+                        :total="156"
+                    />
+                </div>
+            </div>
+
+            <!-- 构建日志 Tab -->
+            <div v-if="logTab === 'build'" class="card">
+                <div class="card-header">
+                    <div class="card-title"><i class="fas fa-hammer"></i> 构建日志</div>
+                    <div style="display:flex;gap:12px;align-items:center;">
+                        <el-select v-model="buildLogProjectId" placeholder="选择项目" clearable size="small" style="width:160px;">
+                            <el-option label="alive-app" value="1" />
+                            <el-option label="drp-platform" value="2" />
+                        </el-select>
+                        <el-select v-model="buildLogBuildId" placeholder="选择构建" clearable size="small" style="width:200px;">
+                            <el-option label="#156 - 修复登录bug" value="156" />
+                            <el-option label="#155 - 增加日志服务" value="155" />
+                            <el-option label="#154 - 优化部署流程" value="154" />
+                        </el-select>
+                        <el-input v-model="buildLogKeyword" placeholder="搜索关键字" clearable size="small" style="width:160px;">
+                            <template #prefix><i class="fas fa-search"></i></template>
+                        </el-input>
+                        <el-button size="small" type="primary"><i class="fas fa-search"></i> 查询</el-button>
+                    </div>
+                </div>
+                <div style="padding:16px;background:#f5f7fa;border-bottom:1px solid #ebeef5;display:flex;gap:16px;align-items:center;">
+                    <span style="font-size:13px;color:#606266;">日志级别：</span>
+                    <el-checkbox-group v-model="logLevelFilters" size="small">
+                        <el-checkbox label="error" style="margin-right:12px;"><span style="color:#f56c6c;font-weight:500;">■ ERROR</span></el-checkbox>
+                        <el-checkbox label="warn" style="margin-right:12px;"><span style="color:#e6a23c;font-weight:500;">■ WARN</span></el-checkbox>
+                        <el-checkbox label="info" style="margin-right:12px;"><span style="color:#409eff;font-weight:500;">■ INFO</span></el-checkbox>
+                    </el-checkbox-group>
+                    <span style="font-size:12px;color:#909399;margin-left:auto;">高亮关键字：<span style="background:#fef0f0;color:#f56c6c;padding:1px 4px;border-radius:2px;">timeout</span></span>
+                </div>
+                <div class="terminal" style="max-height:500px;overflow-y:auto;">
+                    <div class="log-line"><span class="time">[10:30:01]</span> <span class="info">[Checkout]</span> 开始克隆代码仓库...</div>
+                    <div class="log-line"><span class="time">[10:30:02]</span> <span class="info">[Checkout]</span> git clone -b master --depth 1 https://github.com/example/repo.git</div>
+                    <div class="log-line"><span class="time">[10:30:05]</span> <span class="success">[Checkout]</span> 代码克隆完成，commit: a1b2c3d4</div>
+                    <div class="log-line"><span class="time">[10:30:06]</span> <span class="info">[Build]</span> 开始执行 Maven 构建...</div>
+                    <div class="log-line"><span class="time">[10:30:07]</span> <span class="info">[Build]</span> mvn clean package -DskipTests</div>
+                    <div class="log-line"><span class="time">[10:30:15]</span> <span class="warn">[Build]</span> [WARNING] Some dependencies have newer versions</div>
+                    <div class="log-line"><span class="time">[10:30:45]</span> <span class="info">[Build]</span> --- maven-compiler-plugin:3.8.1:compile ---</div>
+                    <div class="log-line"><span class="time">[10:30:50]</span> <span class="info">[Build]</span> --- maven-surefire-plugin:3.0.0:test ---</div>
+                    <div class="log-line"><span class="time">[10:31:00]</span> <span class="success">[Build]</span> BUILD SUCCESS</div>
+                    <div class="log-line"><span class="time">[10:31:01]</span> <span class="info">[Build]</span> 生成产物：alive-app-backend-0.0.1-SNAPSHOT.jar (27.5 MB)</div>
+                </div>
+                <div style="padding:12px;background:#f5f7fa;border-top:1px solid #ebeef5;font-size:12px;color:#909399;">
+                    <i class="fas fa-info-circle"></i> 共 1286 行日志 | 最后更新: 2026-04-25 10:31:02 | <span style="color:#409eff;cursor:pointer;">下载完整日志</span>
+                </div>
+            </div>
+
+            <!-- 实时运行日志 Tab -->
+            <div v-if="logTab === 'realtime'" class="grid-2">
                 <div class="card">
                     <div class="card-header">
                         <div class="card-title"><i class="fas fa-desktop"></i> 实时运行日志</div>
-                        <div>
-                            <el-button size="small" type="primary"><i class="fas fa-play"></i> 启动</el-button>
-                            <el-button size="small"><i class="fas fa-pause"></i> 暂停</el-button>
+                        <div style="display:flex;gap:8px;align-items:center;">
+                            <el-select v-model="realtimeServerId" placeholder="选择服务器" clearable size="small" style="width:160px;">
+                                <el-option label="Dev Server 1 (10.0.0.1)" value="1" />
+                                <el-option label="Dev Server 2 (10.0.0.2)" value="2" />
+                                <el-option label="Prod Server 1 (10.0.1.1)" value="3" />
+                            </el-select>
+                            <el-select v-model="realtimeLogPath" placeholder="日志路径" clearable size="small" style="width:200px;">
+                                <el-option label="/opt/app/logs/app.log" value="/opt/app/logs/app.log" />
+                                <el-option label="/var/log/nginx/access.log" value="/var/log/nginx/access.log" />
+                                <el-option label="/opt/app/logs/error.log" value="/opt/app/logs/error.log" />
+                            </el-select>
                         </div>
                     </div>
-                    <div class="terminal">
+                    <!-- 日志级别过滤工具栏 -->
+                    <div style="padding:12px 16px;background:#f5f7fa;border-bottom:1px solid #ebeef5;display:flex;gap:16px;align-items:center;">
+                        <span style="font-size:13px;color:#606266;">显示级别：</span>
+                        <el-checkbox-group v-model="realtimeLogLevels" size="small">
+                            <el-checkbox label="error" style="margin-right:8px;"><span style="color:#f56c6c;font-weight:600;">ERROR</span></el-checkbox>
+                            <el-checkbox label="warn" style="margin-right:8px;"><span style="color:#e6a23c;font-weight:600;">WARN</span></el-checkbox>
+                            <el-checkbox label="info" style="margin-right:8px;"><span style="color:#409eff;font-weight:600;">INFO</span></el-checkbox>
+                        </el-checkbox-group>
+                        <el-input v-model="realtimeKeyword" placeholder="过滤关键字" clearable size="small" style="width:140px;">
+                            <template #prefix><i class="fas fa-filter"></i></template>
+                        </el-input>
+                        <div style="margin-left:auto;display:flex;gap:8px;">
+                            <el-button size="small" type="primary" :disabled="!realtimeServerId || !realtimeLogPath"><i class="fas fa-play"></i> 连接</el-button>
+                            <el-button size="small" type="danger"><i class="fas fa-stop"></i> 断开</el-button>
+                            <el-button size="small"><i class="fas fa-trash-alt"></i> 清屏</el-button>
+                        </div>
+                    </div>
+                    <div class="terminal" style="height:400px;overflow-y:auto;" id="realtimeTerminal">
                         <div class="log-line"><span class="time">[10:30:01]</span> <span class="info">[APP]</span> Application started successfully</div>
                         <div class="log-line"><span class="time">[10:30:02]</span> <span class="info">[APP]</span> Tomcat started on port: 8080</div>
                         <div class="log-line"><span class="time">[10:30:05]</span> <span class="warn">[DB]</span> HikariPool - Connection pool metrics: active=5, idle=10, waiting=0</div>
@@ -3150,6 +3325,80 @@
                         <div class="log-line"><span class="time">[10:30:20]</span> <span class="error">[APP]</span> Request POST /api/deploy failed: Connection timeout</div>
                         <div class="log-line"><span class="time">[10:30:25]</span> <span class="info">[GC]</span> GC log: Young GC, 123ms, reclaimed 512KB</div>
                     </div>
+                    <div style="padding:12px;background:#1e1e1e;color:#858585;font-size:12px;border-top:1px solid #333;">
+                        <i class="fas fa-circle" style="color:#67c23a;font-size:8px;"></i> 已连接 | 10.0.0.1 | /opt/app/logs/app.log | 接收: 1,286 行
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title"><i class="fas fa-server"></i> 服务器状态</div>
+                    </div>
+                    <el-table :data="serverStatuses" style="width:100%">
+                        <el-table-column prop="name" label="服务器" min-width="160">
+                            <template #default="{row}">
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <span class="server-status-dot" :style="{background: row.online ? '#67c23a' : '#909399'}"></span>
+                                    <span>{{row.name}}</span>
+                                </div>
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="ip" label="IP地址" width="120"></el-table-column>
+                        <el-table-column prop="app" label="运行应用" min-width="120"></el-table-column>
+                        <el-table-column prop="status" label="状态" width="80" align="center">
+                            <template #default="{row}">
+                                <span v-if="row.online" style="color:#67c23a;">在线</span>
+                                <span v-else style="color:#909399;">离线</span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column label="操作" width="80" align="center">
+                            <template #default="{row}">
+                                <el-button size="small" type="primary" link :disabled="!row.online" @click="connectToServer(row)">连接</el-button>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 操作日志详情弹窗 -->
+        <div class="modal-overlay" v-if="showLogDetailDialog" @click.self="showLogDetailDialog = false">
+            <div class="modal-content" style="max-width:700px;">
+                <div class="modal-header">
+                    <div style="font-size:18px;font-weight:600;"><i class="fas fa-file-alt" style="color:var(--primary-color);margin-right:8px;"></i>操作日志详情</div>
+                    <i class="fas fa-times" style="cursor:pointer;font-size:20px;color:#909399;" @click="showLogDetailDialog = false"></i>
+                </div>
+                <div class="modal-body">
+                    <el-descriptions :column="2" border size="small">
+                        <el-descriptions-item label="操作时间">{{currentLogDetail.time}}</el-descriptions-item>
+                        <el-descriptions-item label="操作人">{{currentLogDetail.operator}}</el-descriptions-item>
+                        <el-descriptions-item label="操作类型">
+                            <span :class="'status-tag status-' + currentLogDetail.typeClass">{{currentLogDetail.typeText}}</span>
+                        </el-descriptions-item>
+                        <el-descriptions-item label="状态">
+                            <span :class="'status-tag status-' + currentLogDetail.statusClass">{{currentLogDetail.statusText}}</span>
+                        </el-descriptions-item>
+                        <el-descriptions-item label="项目">{{currentLogDetail.projectName}}</el-descriptions-item>
+                        <el-descriptions-item label="环境">
+                            <span v-if="currentLogDetail.env" style="background:#ecf5ff;color:#409eff;padding:2px 8px;border-radius:4px;font-size:12px;">{{currentLogDetail.env}}</span>
+                        </el-descriptions-item>
+                        <el-descriptions-item label="版本">{{currentLogDetail.version || '-'}}</el-descriptions-item>
+                        <el-descriptions-item label="耗时">{{currentLogDetail.duration ? currentLogDetail.duration + 'ms' : '-'}}</el-descriptions-item>
+                        <el-descriptions-item label="IP地址">{{currentLogDetail.ip || '-'}}</el-descriptions-item>
+                        <el-descriptions-item label="错误信息" v-if="currentLogDetail.errorMessage">
+                            <span style="color:#f56c6c;">{{currentLogDetail.errorMessage}}</span>
+                        </el-descriptions-item>
+                        <el-descriptions-item label="请求参数" :span="2">
+                            <pre style="max-height:150px;overflow:auto;margin:0;font-size:12px;background:#f5f7fa;padding:8px;border-radius:4px;">{{currentLogDetail.requestParams}}</pre>
+                        </el-descriptions-item>
+                        <el-descriptions-item label="详情" :span="2">
+                            <pre style="max-height:200px;overflow:auto;margin:0;font-size:12px;background:#f5f7fa;padding:8px;border-radius:4px;">{{currentLogDetail.detail}}</pre>
+                        </el-descriptions-item>
+                    </el-descriptions>
+                </div>
+                <div class="modal-footer">
+                    <el-button @click="showLogDetailDialog = false">关闭</el-button>
+                    <el-button v-if="currentLogDetail.type === 'BUILD'" type="primary" @click="jumpToBuildDetail(currentLogDetail)"><i class="fas fa-external-link-alt"></i> 跳转到构建详情</el-button>
+                    <el-button v-if="currentLogDetail.type === 'DEPLOY'" type="primary" @click="jumpToDeployDetail(currentLogDetail)"><i class="fas fa-external-link-alt"></i> 跳转到部署详情</el-button>
                 </div>
             </div>
         </div>
@@ -3515,11 +3764,66 @@
                 ]);
 
                 const operationLogs = ref([
-                    { time: '2026-04-17 10:30', operator: 'Nick', type: '构建', typeClass: 'success', detail: 'drp-api #156 构建成功', status: 'success', statusText: '成功' },
-                    { time: '2026-04-17 10:28', operator: 'Nick', type: '部署', typeClass: 'warning', detail: 'drp-api 部署到 Test 环境', status: 'running', statusText: '进行中' },
-                    { time: '2026-04-17 09:45', operator: 'System', type: '构建', typeClass: 'success', detail: 'drp-api #155 自动构建', status: 'success', statusText: '成功' },
-                    { time: '2026-04-17 09:30', operator: 'Nick', type: '回滚', typeClass: 'danger', detail: 'drp-auth 回滚到 v20260415', status: 'success', statusText: '成功' }
+                    { time: '2026-04-17 10:30', operator: 'Nick', type: 'BUILD', typeText: '构建', typeClass: 'success', projectName: 'drp-api', projectId: 2, env: 'Test', version: 'v20260417-001', detail: 'drp-api #156 构建成功', status: 'SUCCESS', statusText: '成功', statusClass: 'success', ip: '192.168.1.100', duration: 154000 },
+                    { time: '2026-04-17 10:28', operator: 'Nick', type: 'DEPLOY', typeText: '部署', typeClass: 'warning', projectName: 'drp-api', projectId: 2, env: 'Test', version: 'v20260417-001', detail: 'drp-api 部署到 Test 环境', status: 'RUNNING', statusText: '进行中', statusClass: 'info', ip: '192.168.1.100', duration: null },
+                    { time: '2026-04-17 09:45', operator: 'System', type: 'BUILD', typeText: '构建', typeClass: 'success', projectName: 'drp-api', projectId: 2, env: null, version: 'v20260417-002', detail: 'drp-api #155 自动构建', status: 'SUCCESS', statusText: '成功', statusClass: 'success', ip: '127.0.0.1', duration: 192000 },
+                    { time: '2026-04-17 09:30', operator: 'Nick', type: 'ROLLBACK', typeText: '回滚', typeClass: 'danger', projectName: 'drp-auth', projectId: 3, env: 'Prod', version: 'v20260415', detail: 'drp-auth 回滚到 v20260415', status: 'SUCCESS', statusText: '成功', statusClass: 'success', ip: '192.168.1.100', duration: 45000, errorMessage: null }
                 ]);
+
+                // 日志中心相关变量
+                const logTab = ref('operation');
+                const logQuery = reactive({
+                    operationType: '',
+                    projectId: null,
+                    dateRange: [],
+                    keyword: ''
+                });
+                const showLogDetailDialog = ref(false);
+                const currentLogDetail = ref({});
+                const buildLogProjectId = ref(null);
+                const buildLogBuildId = ref(null);
+                const buildLogKeyword = ref('');
+                const logLevelFilters = ref(['error', 'warn', 'info']);
+                const realtimeServerId = ref(null);
+                const realtimeLogPath = ref('');
+                const realtimeKeyword = ref('');
+                const realtimeLogLevels = ref(['error', 'warn', 'info']);
+                const serverStatuses = ref([
+                    { id: 1, name: 'Dev Server 1', ip: '10.0.0.1', app: 'drp-api, drp-web', online: true },
+                    { id: 2, name: 'Dev Server 2', ip: '10.0.0.2', app: 'drp-api', online: true },
+                    { id: 3, name: 'Prod Server 1', ip: '10.0.1.1', app: 'drp-api, drp-gateway', online: true },
+                    { id: 4, name: 'Prod Server 2', ip: '10.0.1.2', app: 'drp-web', online: false }
+                ]);
+
+                // 日志操作方法
+                const handleOperationLogClick = (row) => {
+                    currentLogDetail.value = { ...row, requestParams: JSON.stringify({ projectId: row.projectId, env: row.env, version: row.version }, null, 2) };
+                    showLogDetailDialog.value = true;
+                };
+
+                const getRowClass = ({ row }) => {
+                    return row.type === 'BUILD' || row.type === 'DEPLOY' || row.type === 'ROLLBACK' ? 'cursor-pointer' : '';
+                };
+
+                const jumpToDetail = (row) => {
+                    currentLogDetail.value = { ...row, requestParams: JSON.stringify({ projectId: row.projectId, env: row.env, version: row.version }, null, 2) };
+                    showLogDetailDialog.value = true;
+                };
+
+                const jumpToBuildDetail = (row) => {
+                    showLogDetailDialog.value = false;
+                    navigateTo('build-detail');
+                };
+
+                const jumpToDeployDetail = (row) => {
+                    showLogDetailDialog.value = false;
+                    navigateTo('deploy-detail');
+                };
+
+                const connectToServer = (server) => {
+                    realtimeServerId.value = server.id;
+                    logTab.value = 'realtime';
+                };
 
                 const notifyRules = ref([
                     { channel: '企业微信', channelIcon: 'fab fa-weixin', channelColor: '#07c160', event: '构建成功', eventClass: 'success', project: 'drp-api', enabled: true },
@@ -3682,6 +3986,26 @@
                     users,
                     roles,
                     permissions,
+                    // 日志中心相关
+                    logTab,
+                    logQuery,
+                    showLogDetailDialog,
+                    currentLogDetail,
+                    buildLogProjectId,
+                    buildLogBuildId,
+                    buildLogKeyword,
+                    logLevelFilters,
+                    realtimeServerId,
+                    realtimeLogPath,
+                    realtimeKeyword,
+                    realtimeLogLevels,
+                    serverStatuses,
+                    handleOperationLogClick,
+                    getRowClass,
+                    jumpToDetail,
+                    jumpToBuildDetail,
+                    jumpToDeployDetail,
+                    connectToServer,
                     navigateTo,
                     handleLogin,
                     testConnection,
