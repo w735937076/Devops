@@ -135,6 +135,11 @@ const menuList: MenuItem[] = [
     icon: 'Document'
   },
   {
+    path: '/notify',
+    title: '通知管理',
+    icon: 'Bell'
+  },
+  {
     path: '/system',
     title: '系统管理',
     icon: 'Setting',

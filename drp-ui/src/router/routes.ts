@@ -129,6 +129,14 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '日志中心', icon: 'Document' }
       },
 
+      // 通知管理
+      {
+        path: 'notify',
+        name: 'NotifyCenter',
+        component: () => import('@/views/notify/Index.vue'),
+        meta: { title: '通知管理', icon: 'Bell' }
+      },
+
       // 系统管理
       {
         path: 'system/users',

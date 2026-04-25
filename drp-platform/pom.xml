@@ -20,6 +20,7 @@
         <module>drp-server</module>
         <module>drp-build</module>
         <module>drp-log</module>
+        <module>drp-notify</module>
         <module>drp-sql</module>
         <module>drp-boot</module>
     </modules>
