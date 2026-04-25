@@ -3409,66 +3409,289 @@
                 <h3><i class="fas fa-info-circle"></i> 页面说明 - 通知管理</h3>
                 <div class="doc-section">
                     <h4>页面目标</h4>
-                    <p>配置多渠道通知（企业微信、钉钉、邮件），支持按项目、按事件类型精细化配置。</p>
+                    <p>配置多渠道通知（企业微信、钉钉、飞书、邮件），支持按项目、按事件类型精细化配置，具备通知历史追踪、送达状态查看和消息模板管理功能。</p>
                 </div>
             </div>
 
-            <div class="grid-3" style="margin-bottom:24px;">
-                <div class="card" style="text-align:center;padding:32px;cursor:pointer;">
-                    <div style="font-size:48px;color:#07c160;margin-bottom:16px;"><i class="fab fa-weixin"></i></div>
-                    <div style="font-weight:600;font-size:18px;margin-bottom:8px;">企业微信</div>
-                    <div style="color:#909399;font-size:14px;">已配置</div>
+            <!-- 渠道配置卡片 -->
+            <div class="grid-4" style="margin-bottom:24px;">
+                <div class="card" style="text-align:center;padding:24px;cursor:pointer;">
+                    <div style="font-size:40px;color:#07c160;margin-bottom:12px;"><i class="fab fa-weixin"></i></div>
+                    <div style="font-weight:600;font-size:16px;margin-bottom:6px;">企业微信</div>
+                    <div style="color:#67c23a;font-size:12px;">● 已配置</div>
                 </div>
-                <div class="card" style="text-align:center;padding:32px;cursor:pointer;">
-                    <div style="font-size:48px;color:#1677ff;margin-bottom:16px;"><i class="fas fa-bullhorn"></i></div>
-                    <div style="font-weight:600;font-size:18px;margin-bottom:8px;">钉钉</div>
-                    <div style="color:#909399;font-size:14px;">已配置</div>
+                <div class="card" style="text-align:center;padding:24px;cursor:pointer;">
+                    <div style="font-size:40px;color:#1677ff;margin-bottom:12px;"><i class="fas fa-bullhorn"></i></div>
+                    <div style="font-weight:600;font-size:16px;margin-bottom:6px;">钉钉</div>
+                    <div style="color:#67c23a;font-size:12px;">● 已配置</div>
                 </div>
-                <div class="card" style="text-align:center;padding:32px;cursor:pointer;">
-                    <div style="font-size:48px;color:#67c23a;margin-bottom:16px;"><i class="fas fa-envelope"></i></div>
-                    <div style="font-weight:600;font-size:18px;margin-bottom:8px;">邮件</div>
-                    <div style="color:#909399;font-size:14px;">未配置</div>
+                <div class="card" style="text-align:center;padding:24px;cursor:pointer;">
+                    <div style="font-size:40px;color:#0066cc;margin-bottom:12px;"><i class="fas fa-egg"></i></div>
+                    <div style="font-weight:600;font-size:16px;margin-bottom:6px;">飞书</div>
+                    <div style="color:#909399;font-size:12px;">○ 未配置</div>
+                </div>
+                <div class="card" style="text-align:center;padding:24px;cursor:pointer;">
+                    <div style="font-size:40px;color:#67c23a;margin-bottom:12px;"><i class="fas fa-envelope"></i></div>
+                    <div style="font-weight:600;font-size:16px;margin-bottom:6px;">邮件</div>
+                    <div style="color:#67c23a;font-size:12px;">● 已配置</div>
                 </div>
             </div>
 
+            <!-- 统计概览 -->
+            <div class="stats-grid" style="margin-bottom:24px;grid-template-columns:repeat(4,1fr);">
+                <div class="stat-card">
+                    <div class="stat-icon blue"><i class="fas fa-bell"></i></div>
+                    <div class="stat-info">
+                        <h3>128</h3>
+                        <p>本月发送</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+                    <div class="stat-info">
+                        <h3>124</h3>
+                        <p>发送成功</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon red"><i class="fas fa-times-circle"></i></div>
+                    <div class="stat-info">
+                        <h3>4</h3>
+                        <p>发送失败</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon orange"><i class="fas fa-clock"></i></div>
+                    <div class="stat-info">
+                        <h3>2</h3>
+                        <p>重试中</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 通知中心Tab -->
             <div class="card">
-                <div class="card-header">
-                    <div class="card-title"><i class="fas fa-bell"></i> 通知规则</div>
-                    <el-button type="primary" size="small"><i class="fas fa-plus"></i> 添加规则</el-button>
+                <div class="tab-nav" style="background:#f5f7fa;padding:0 16px;border-radius:8px 8px 0 0;">
+                    <div class="tab-item active"><i class="fas fa-list"></i> 通知规则</div>
+                    <div class="tab-item"><i class="fas fa-history"></i> 发送记录</div>
+                    <div class="tab-item"><i class="fas fa-file-alt"></i> 消息模板</div>
                 </div>
-                <el-table :data="notifyRules" style="width:100%">
-                    <el-table-column prop="channel" label="渠道" width="120">
-                        <template #default="{row}">
-                            <span style="display:flex;align-items:center;gap:8px;">
-                                <i :class="row.channelIcon" :style="{color: row.channelColor}"></i>
-                                {{row.channel}}
-                            </span>
-                        </template>
-                    </el-table-column>
-                    <el-table-column prop="event" label="事件类型" width="150">
-                        <template #default="{row}">
-                            <span :class="'status-tag status-' + row.eventClass">{{row.event}}</span>
-                        </template>
-                    </el-table-column>
-                    <el-table-column prop="project" label="关联项目" width="150">
-                        <template #default="{row}">
-                            <span v-if="row.project">{{row.project}}</span>
-                            <span v-else style="color:#909399;">全局配置</span>
-                        </template>
-                    </el-table-column>
-                    <el-table-column prop="recipients" label="接收人" min-width="200"></el-table-column>
-                    <el-table-column prop="status" label="状态" width="100">
-                        <template #default="{row}">
-                            <el-switch :model-value="row.enabled"></el-switch>
-                        </template>
-                    </el-table-column>
-                    <el-table-column label="操作" width="150" fixed="right">
-                        <template #default>
-                            <el-button type="primary" size="small" link>编辑</el-button>
-                            <el-button type="danger" size="small" link>删除</el-button>
-                        </template>
-                    </el-table-column>
-                </el-table>
+
+                <!-- 通知规则Tab -->
+                <div>
+                    <div class="card-header">
+                        <div class="card-title"><i class="fas fa-bell"></i> 通知规则</div>
+                        <el-button type="primary" size="small"><i class="fas fa-plus"></i> 添加规则</el-button>
+                    </div>
+                    <el-table :data="notifyRules" style="width:100%">
+                        <el-table-column prop="channel" label="渠道" width="120">
+                            <template #default="{row}">
+                                <span style="display:flex;align-items:center;gap:8px;">
+                                    <i :class="row.channelIcon" :style="{color: row.channelColor}"></i>
+                                    {{row.channel}}
+                                </span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="event" label="事件类型" width="180">
+                            <template #default="{row}">
+                                <span :class="'status-tag status-' + row.eventClass">{{row.event}}</span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="project" label="关联项目" width="150">
+                            <template #default="{row}">
+                                <span v-if="row.project">{{row.project}}</span>
+                                <span v-else style="color:#909399;">全局配置</span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="recipients" label="接收人" min-width="150">
+                            <template #default="{row}">
+                                <span style="color:#606266;">{{row.recipients}}</span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="rateLimit" label="频率限制" width="100">
+                            <template #default="{row}">
+                                <span style="color:#909399;font-size:12px;">{{row.rateLimit || '无'}}</span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="template" label="模板" width="100">
+                            <template #default="{row}">
+                                <span :style="{color: row.templateId ? '#409eff' : '#909399'}">
+                                    {{row.templateId ? '自定义' : '默认'}}
+                                </span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="status" label="状态" width="80">
+                            <template #default="{row}">
+                                <el-switch :model-value="row.enabled"></el-switch>
+                            </template>
+                        </el-table-column>
+                        <el-table-column label="操作" width="180" fixed="right">
+                            <template #default="{row}">
+                                <el-button type="primary" size="small" link>编辑</el-button>
+                                <el-button type="success" size="small" link>测试</el-button>
+                                <el-button type="danger" size="small" link>删除</el-button>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                </div>
+
+                <!-- 发送记录Tab (新增) -->
+                <div style="display:none;">
+                    <div class="card-header">
+                        <div class="card-title"><i class="fas fa-history"></i> 发送记录</div>
+                        <div style="display:flex;gap:12px;">
+                            <el-select placeholder="渠道" size="small" style="width:120px;">
+                                <el-option label="全部" value="" />
+                                <el-option label="企业微信" value="WECOM" />
+                                <el-option label="钉钉" value="DINGTALK" />
+                                <el-option label="飞书" value="FEISHU" />
+                                <el-option label="邮件" value="EMAIL" />
+                            </el-select>
+                            <el-select placeholder="状态" size="small" style="width:100px;">
+                                <el-option label="全部" value="" />
+                                <el-option label="成功" value="SUCCESS" />
+                                <el-option label="失败" value="FAIL" />
+                                <el-option label="重试" value="RETRY" />
+                            </el-select>
+                            <el-date-picker type="daterange" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" size="small" style="width:240px;" />
+                            <el-button size="small"><i class="fas fa-download"></i> 导出</el-button>
+                            <el-button size="small"><i class="fas fa-sync"></i> 刷新</el-button>
+                        </div>
+                    </div>
+                    <el-table :data="notifyRecords" style="width:100%">
+                        <el-table-column prop="sendTime" label="发送时间" width="160"></el-table-column>
+                        <el-table-column prop="channel" label="渠道" width="100">
+                            <template #default="{row}">
+                                <span style="display:flex;align-items:center;gap:6px;">
+                                    <i :class="row.channelIcon" :style="{color: row.channelColor, fontSize:'14px'}"></i>
+                                    {{row.channel}}
+                                </span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="event" label="事件" width="120">
+                            <template #default="{row}">
+                                <span :class="'status-tag status-' + row.eventClass">{{row.event}}</span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="recipient" label="接收人" width="150"></el-table-column>
+                        <el-table-column prop="title" label="标题" min-width="200">
+                            <template #default="{row}">
+                                <span style="font-weight:500;">{{row.title}}</span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="status" label="状态" width="80">
+                            <template #default="{row}">
+                                <span :class="'status-tag status-' + row.statusClass">{{row.statusText}}</span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="retryCount" label="重试" width="80">
+                            <template #default="{row}">
+                                <span style="color:#909399;">{{row.retryCount || '-'}} / {{row.maxRetry || 3}}</span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="externalId" label="外部ID" width="120">
+                            <template #default="{row}">
+                                <span style="color:#909399;font-size:12px;">{{row.externalId || '-'}}</span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column label="操作" width="120" fixed="right">
+                            <template #default>
+                                <el-button type="primary" size="small" link>详情</el-button>
+                                <el-button type="warning" size="small" link>重试</el-button>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                    <div style="display:flex;justify-content:center;padding:16px;">
+                        <el-pagination background layout="prev, pager, next" :total="100" :page-size="10" />
+                    </div>
+                </div>
+
+                <!-- 消息模板Tab (新增) -->
+                <div style="display:none;">
+                    <div class="card-header">
+                        <div class="card-title"><i class="fas fa-file-alt"></i> 消息模板</div>
+                        <el-button type="primary" size="small"><i class="fas fa-plus"></i> 创建模板</el-button>
+                    </div>
+                    <el-table :data="notifyTemplates" style="width:100%">
+                        <el-table-column prop="name" label="模板名称" width="180"></el-table-column>
+                        <el-table-column prop="channel" label="渠道" width="100">
+                            <template #default="{row}">
+                                <span style="display:flex;align-items:center;gap:6px;">
+                                    <i :class="row.channelIcon" :style="{color: row.channelColor, fontSize:'14px'}"></i>
+                                    {{row.channel}}
+                                </span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="event" label="适用事件" width="150">
+                            <template #default="{row}">
+                                <span :class="'status-tag status-' + row.eventClass">{{row.event}}</span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="titleTemplate" label="标题模板" min-width="200">
+                            <template #default="{row}">
+                                <span style="color:#606266;">{{row.titleTemplate}}</span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="variables" label="变量" width="150">
+                            <template #default="{row}">
+                                <span style="color:#909399;font-size:12px;">{{row.variables}}</span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="status" label="状态" width="80">
+                            <template #default="{row}">
+                                <el-switch :model-value="row.enabled"></el-switch>
+                            </template>
+                        </el-table-column>
+                        <el-table-column label="操作" width="180" fixed="right">
+                            <template #default>
+                                <el-button type="primary" size="small" link>编辑</el-button>
+                                <el-button type="info" size="small" link>预览</el-button>
+                                <el-button type="danger" size="small" link>删除</el-button>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                </div>
+            </div>
+
+            <!-- 事件类型说明 -->
+            <div class="card" style="margin-top:20px;">
+                <div class="card-header">
+                    <div class="card-title"><i class="fas fa-th"></i> 支持的通知事件</div>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;">
+                    <div style="padding:16px;background:#f5f7fa;border-radius:8px;">
+                        <div style="font-weight:600;margin-bottom:12px;color:#303133;"><i class="fas fa-hammer"></i> 构建事件</div>
+                        <div style="font-size:13px;color:#606266;line-height:1.8;">
+                            <div>● BUILD_START - 构建开始</div>
+                            <div>● BUILD_SUCCESS - 构建成功</div>
+                            <div>● BUILD_FAIL - 构建失败</div>
+                        </div>
+                    </div>
+                    <div style="padding:16px;background:#f5f7fa;border-radius:8px;">
+                        <div style="font-weight:600;margin-bottom:12px;color:#303133;"><i class="fas fa-rocket"></i> 部署事件</div>
+                        <div style="font-size:13px;color:#606266;line-height:1.8;">
+                            <div>● DEPLOY_START - 部署开始</div>
+                            <div>● DEPLOY_SUCCESS - 部署成功</div>
+                            <div>● DEPLOY_FAIL - 部署失败</div>
+                            <div>● DEPLOY_APPROVAL - 待审批</div>
+                        </div>
+                    </div>
+                    <div style="padding:16px;background:#f5f7fa;border-radius:8px;">
+                        <div style="font-weight:600;margin-bottom:12px;color:#303133;"><i class="fas fa-undo"></i> 回滚事件</div>
+                        <div style="font-size:13px;color:#606266;line-height:1.8;">
+                            <div>● ROLLBACK_SUCCESS - 回滚成功</div>
+                            <div>● ROLLBACK_FAIL - 回滚失败</div>
+                        </div>
+                    </div>
+                    <div style="padding:16px;background:#f5f7fa;border-radius:8px;">
+                        <div style="font-weight:600;margin-bottom:12px;color:#303133;"><i class="fas fa-server"></i> 服务器事件</div>
+                        <div style="font-size:13px;color:#606266;line-height:1.8;">
+                            <div>● SERVER_OFFLINE - 服务器离线</div>
+                            <div>● SERVER_ALERT - 服务器告警</div>
+                            <div>● LOGIN_FAILED - 登录失败</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -3826,10 +4049,29 @@
                 };
 
                 const notifyRules = ref([
-                    { channel: '企业微信', channelIcon: 'fab fa-weixin', channelColor: '#07c160', event: '构建成功', eventClass: 'success', project: 'drp-api', enabled: true },
-                    { channel: '企业微信', channelIcon: 'fab fa-weixin', channelColor: '#07c160', event: '部署失败', eventClass: 'danger', project: '', enabled: true },
-                    { channel: '钉钉', channelIcon: 'fas fa-bullhorn', channelColor: '#1677ff', event: '构建失败', eventClass: 'danger', project: '', enabled: true },
-                    { channel: '邮件', channelIcon: 'fas fa-envelope', channelColor: '#67c23a', event: '部署成功', eventClass: 'success', project: '', enabled: false }
+                    { channel: '企业微信', channelIcon: 'fab fa-weixin', channelColor: '#07c160', event: '构建成功', eventClass: 'success', project: 'drp-api', recipients: '@all', rateLimit: '60秒', templateId: null, enabled: true },
+                    { channel: '企业微信', channelIcon: 'fab fa-weixin', channelColor: '#07c160', event: '部署失败', eventClass: 'danger', project: '', recipients: '@all', rateLimit: '30秒', templateId: 1, enabled: true },
+                    { channel: '企业微信', channelIcon: 'fab fa-weixin', channelColor: '#07c160', event: '部署成功', eventClass: 'success', project: '', recipients: '@nick', rateLimit: null, templateId: null, enabled: true },
+                    { channel: '钉钉', channelIcon: 'fas fa-bullhorn', channelColor: '#1677ff', event: '构建失败', eventClass: 'danger', project: '', recipients: '群通知', rateLimit: '60秒', templateId: null, enabled: true },
+                    { channel: '钉钉', channelIcon: 'fas fa-bullhorn', channelColor: '#1677ff', event: '服务器离线', eventClass: 'danger', project: '', recipients: '群通知', rateLimit: null, templateId: 2, enabled: true },
+                    { channel: '邮件', channelIcon: 'fas fa-envelope', channelColor: '#67c23a', event: '部署成功', eventClass: 'success', project: '', recipients: 'team@example.com', rateLimit: null, templateId: null, enabled: false }
+                ]);
+
+                // 通知发送记录 (新增)
+                const notifyRecords = ref([
+                    { sendTime: '2026-04-26 10:30:25', channel: '企业微信', channelIcon: 'fab fa-weixin', channelColor: '#07c160', event: '部署成功', eventClass: 'success', recipient: '@all', title: '[DRP] drp-api 部署成功', status: 'SUCCESS', statusClass: 'success', statusText: '成功', retryCount: null, maxRetry: 3, externalId: 'msgid_123456' },
+                    { sendTime: '2026-04-26 10:15:10', channel: '钉钉', channelIcon: 'fas fa-bullhorn', channelColor: '#1677ff', event: '构建失败', eventClass: 'danger', recipient: '群通知', title: '[DRP] drp-api 构建失败', status: 'SUCCESS', statusClass: 'success', statusText: '成功', retryCount: null, maxRetry: 3, externalId: 'taskid_789012' },
+                    { sendTime: '2026-04-26 09:45:30', channel: '企业微信', channelIcon: 'fab fa-weixin', channelColor: '#07c160', event: '构建成功', eventClass: 'success', recipient: '@nick', title: '[DRP] drp-web 构建成功', status: 'SUCCESS', statusClass: 'success', statusText: '成功', retryCount: null, maxRetry: 3, externalId: 'msgid_123455' },
+                    { sendTime: '2026-04-26 09:30:00', channel: '邮件', channelIcon: 'fas fa-envelope', channelColor: '#67c23a', event: '部署成功', eventClass: 'success', recipient: 'admin@example.com', title: '【DRP】部署成功通知', status: 'FAIL', statusClass: 'danger', statusText: '失败', retryCount: 3, maxRetry: 3, externalId: null },
+                    { sendTime: '2026-04-26 09:00:15', channel: '企业微信', channelIcon: 'fab fa-weixin', channelColor: '#07c160', event: '服务器离线', eventClass: 'danger', recipient: '@all', title: '[告警] 服务器离线', status: 'RETRY', statusClass: 'warning', statusText: '重试', retryCount: 1, maxRetry: 3, externalId: null }
+                ]);
+
+                // 通知消息模板 (新增)
+                const notifyTemplates = ref([
+                    { name: '部署失败告警', channel: '企业微信', channelIcon: 'fab fa-weixin', channelColor: '#07c160', event: '部署失败', eventClass: 'danger', titleTemplate: '[DRP告警] {{projectName}} 部署失败', variables: 'projectName, version, env, operator, errorMessage', enabled: true },
+                    { name: '服务器离线告警', channel: '钉钉', channelIcon: 'fas fa-bullhorn', channelColor: '#1677ff', event: '服务器离线', eventClass: 'danger', titleTemplate: '🚨 {{projectName}} 服务器离线', variables: 'serverName, ip, alertType, time', enabled: true },
+                    { name: '构建成功通知', channel: '企业微信', channelIcon: 'fab fa-weixin', channelColor: '#07c160', event: '构建成功', eventClass: 'success', titleTemplate: '[DRP] {{projectName}} 构建成功', variables: 'projectName, version, branch, duration', enabled: true },
+                    { name: '部署成功通知', channel: '邮件', channelIcon: 'fas fa-envelope', channelColor: '#67c23a', event: '部署成功', eventClass: 'success', titleTemplate: '【DRP】{{projectName}} 部署成功', variables: 'projectName, version, env, operator, deployTime', enabled: true }
                 ]);
 
                 const users = ref([
@@ -3983,6 +4225,8 @@
                     servers,
                     operationLogs,
                     notifyRules,
+                    notifyRecords,
+                    notifyTemplates,
                     users,
                     roles,
                     permissions,
