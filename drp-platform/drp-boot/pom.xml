@@ -55,6 +55,11 @@
             <artifactId>drp-build</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.drp</groupId>
+            <artifactId>drp-log</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
     </dependencies>
 
 </project>
