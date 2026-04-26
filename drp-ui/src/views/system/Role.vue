@@ -139,6 +139,15 @@ import { Edit, Delete, Key } from '@element-plus/icons-vue'
 import { queryRoles, createRole, updateRole, deleteRole, assignRolePermissions, type Role, type CreateRoleRequest, type UpdateRoleRequest } from '@/api/role'
 import { getPermissionTree, getPermissionIdsByRoleId, type Permission } from '@/api/permission'
 
+interface RoleFormData extends Partial<CreateRoleRequest> {
+  id?: number
+  code: string
+  name: string
+  description: string
+  sort: number
+  status: number
+}
+
 // 表格数据
 const loading = ref(false)
 const tableData = ref<Role[]>([])
@@ -157,7 +166,7 @@ const queryParams = reactive({
 const dialogVisible = ref(false)
 const isEdit = ref(false)
 const formRef = ref<FormInstance>()
-const formData = reactive<CreateRoleRequest | UpdateRoleRequest>({
+const formData = reactive<RoleFormData>({
   code: '',
   name: '',
   description: '',

@@ -31,6 +31,15 @@
           <p>分支策略</p>
         </div>
       </div>
+      <div class="stat-card">
+        <div class="stat-icon purple">
+          <el-icon><Promotion /></el-icon>
+        </div>
+        <div class="stat-info">
+          <h3>{{ deployServerCount }}</h3>
+          <p>部署服务器</p>
+        </div>
+      </div>
     </div>
 
     <!-- Tab 切换 -->
@@ -44,6 +53,9 @@
         </div>
         <div class="tab-item" :class="{ active: activeTab === 'variables' }" @click="activeTab = 'variables'">
           <el-icon><Key /></el-icon> 环境变量
+        </div>
+        <div class="tab-item" :class="{ active: activeTab === 'servers' }" @click="activeTab = 'servers'">
+          <el-icon><Promotion /></el-icon> 部署服务器
         </div>
         <div class="tab-item" :class="{ active: activeTab === 'policies' }" @click="activeTab = 'policies'">
           <el-icon><Connection /></el-icon> 分支策略
@@ -114,6 +126,50 @@
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- 部署服务器 Tab -->
+      <div v-show="activeTab === 'servers'" class="tab-content">
+        <div class="card-header">
+          <div class="card-title"><el-icon><Promotion /></el-icon> 部署服务器绑定</div>
+          <div style="display: flex; gap: 8px">
+            <el-select v-model="deployEnvFilter" placeholder="按环境筛选" clearable style="width: 140px" @change="loadDeployServers">
+              <el-option label="开发环境" value="dev" />
+              <el-option label="测试环境" value="test" />
+              <el-option label="预发环境" value="pre" />
+              <el-option label="生产环境" value="prod" />
+            </el-select>
+            <el-button type="primary" @click="handleCreateDeployServer">
+              <el-icon><Plus /></el-icon> 绑定服务器
+            </el-button>
+          </div>
+        </div>
+        <el-table v-loading="deployServerLoading" :data="deployServerList" stripe>
+          <el-table-column prop="envName" label="部署环境" width="120">
+            <template #default="{ row }">
+              <span class="status-tag" :class="getEnvClass(row.env)">{{ row.envName }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="serverName" label="服务器" min-width="180" />
+          <el-table-column label="主机地址" min-width="180">
+            <template #default="{ row }">
+              {{ row.hostname }}<span v-if="row.port">:{{ row.port }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="serverStatusDesc" label="服务器状态" width="120">
+            <template #default="{ row }">
+              <el-tag :type="getServerStatusType(row.serverStatus)">{{ row.serverStatusDesc || '未知' }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="deployPath" label="部署路径" min-width="220" show-overflow-tooltip />
+          <el-table-column prop="createTime" label="绑定时间" width="170" />
+          <el-table-column label="操作" width="160" fixed="right">
+            <template #default="{ row }">
+              <el-button type="primary" link @click="handleEditDeployServer(row)">编辑</el-button>
+              <el-button type="danger" link @click="handleDeleteDeployServer(row)">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
       </div>
 
       <!-- 项目成员 Tab -->
@@ -328,6 +384,37 @@
       </template>
     </el-dialog>
 
+    <!-- 部署服务器对话框 -->
+    <el-dialog v-model="showDeployServerDialog" :title="editingDeployServer ? '编辑部署服务器' : '绑定部署服务器'" width="560px" destroy-on-close>
+      <el-form :model="deployServerForm" label-width="100px">
+        <el-form-item label="部署环境" required>
+          <el-select v-model="deployServerForm.env" placeholder="请选择环境" style="width: 100%">
+            <el-option label="开发环境 (dev)" value="dev" />
+            <el-option label="测试环境 (test)" value="test" />
+            <el-option label="预发环境 (pre)" value="pre" />
+            <el-option label="生产环境 (prod)" value="prod" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="服务器" required>
+          <el-select v-model="deployServerForm.serverId" placeholder="请选择服务器" filterable style="width: 100%">
+            <el-option
+              v-for="server in serverOptions"
+              :key="server.id"
+              :label="`${server.name} (${server.hostname})`"
+              :value="server.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="部署路径" required>
+          <el-input v-model="deployServerForm.deployPath" placeholder="如: /opt/apps/aliveApp" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showDeployServerDialog = false">取消</el-button>
+        <el-button type="primary" @click="handleSaveDeployServer" :loading="submitLoading">保存</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 分支策略对话框 -->
     <el-dialog v-model="showPolicyDialog" :title="editingPolicy ? '编辑分支策略' : '新增分支策略'" width="550px" destroy-on-close>
       <el-form :model="policyForm" label-width="120px">
@@ -367,6 +454,10 @@ import {
   createEnvVariable,
   updateEnvVariable,
   deleteEnvVariable,
+  getProjectDeployServers,
+  createProjectDeployServer,
+  updateProjectDeployServer,
+  deleteProjectDeployServer,
   getBranchPolicies,
   createBranchPolicy,
   updateBranchPolicy,
@@ -375,8 +466,10 @@ import {
   type ProjectMember,
   type MemberRole,
   type EnvVariable,
+  type ProjectDeployServer,
   type BranchPolicy
 } from '@/api/project'
+import { getServerAll, type Server } from '@/api/server'
 
 const route = useRoute()
 const router = useRouter()
@@ -392,17 +485,20 @@ const filterEnv = ref('')
 const projectDetail = ref<Project | null>(null)
 const memberList = ref<ProjectMember[]>([])
 const availableUsers = ref<{ id: number; username: string; realName: string }[]>([])
+const serverOptions = ref<Server[]>([])
 
 // 统计数据
 const memberCount = computed(() => memberList.value.length)
 const variableCount = ref(0)
 const policyCount = ref(0)
+const deployServerCount = ref(0)
 const projectName = computed(() => projectDetail.value?.name || '项目详情')
 
 // 对话框状态
 const showMemberDialog = ref(false)
 const showRoleDialog = ref(false)
 const showVariableDialog = ref(false)
+const showDeployServerDialog = ref(false)
 const showPolicyDialog = ref(false)
 const currentMember = ref<ProjectMember | null>(null)
 
@@ -415,6 +511,17 @@ const variableForm = reactive({
   varKey: '',
   varValue: '',
   isSecret: 0
+})
+
+// 部署服务器相关
+const deployServerLoading = ref(false)
+const deployServerList = ref<ProjectDeployServer[]>([])
+const deployEnvFilter = ref('')
+const editingDeployServer = ref<ProjectDeployServer | null>(null)
+const deployServerForm = reactive({
+  serverId: undefined as number | undefined,
+  env: 'test' as 'dev' | 'test' | 'pre' | 'prod',
+  deployPath: ''
 })
 
 // 分支策略相关
@@ -474,6 +581,14 @@ async function loadAvailableUsers() {
     availableUsers.value = await getAvailableUsers()
   } catch (error) {
     console.error('加载用户列表失败:', error)
+  }
+}
+
+async function loadServerOptions() {
+  try {
+    serverOptions.value = await getServerAll()
+  } catch (error) {
+    console.error('加载服务器列表失败:', error)
   }
 }
 
@@ -636,6 +751,95 @@ function resetVariableForm() {
   variableForm.isSecret = 0
 }
 
+// ============ 部署服务器相关 ============
+
+async function loadDeployServers() {
+  const id = Number(route.params.id)
+  if (!id) return
+
+  deployServerLoading.value = true
+  try {
+    deployServerList.value = await getProjectDeployServers(id, deployEnvFilter.value || undefined)
+    deployServerCount.value = deployServerList.value.length
+  } catch (error) {
+    console.error('加载部署服务器失败:', error)
+  } finally {
+    deployServerLoading.value = false
+  }
+}
+
+function handleCreateDeployServer() {
+  editingDeployServer.value = null
+  resetDeployServerForm()
+  showDeployServerDialog.value = true
+  if (!serverOptions.value.length) {
+    loadServerOptions()
+  }
+}
+
+function handleEditDeployServer(row: ProjectDeployServer) {
+  editingDeployServer.value = row
+  deployServerForm.serverId = row.serverId
+  deployServerForm.env = row.env
+  deployServerForm.deployPath = row.deployPath
+  showDeployServerDialog.value = true
+  if (!serverOptions.value.length) {
+    loadServerOptions()
+  }
+}
+
+async function handleSaveDeployServer() {
+  if (!deployServerForm.serverId || !deployServerForm.deployPath) {
+    ElMessage.warning('请填写完整的部署服务器信息')
+    return
+  }
+
+  const id = Number(route.params.id)
+  submitLoading.value = true
+  try {
+    const payload = {
+      serverId: deployServerForm.serverId,
+      env: deployServerForm.env,
+      deployPath: deployServerForm.deployPath
+    }
+    if (editingDeployServer.value) {
+      await updateProjectDeployServer(id, editingDeployServer.value.id, payload)
+      ElMessage.success('更新成功')
+    } else {
+      await createProjectDeployServer(id, payload)
+      ElMessage.success('绑定成功')
+    }
+    showDeployServerDialog.value = false
+    editingDeployServer.value = null
+    resetDeployServerForm()
+    loadDeployServers()
+  } catch (error: any) {
+    ElMessage.error(error.message || '保存失败')
+  } finally {
+    submitLoading.value = false
+  }
+}
+
+async function handleDeleteDeployServer(row: ProjectDeployServer) {
+  try {
+    await ElMessageBox.confirm(`确定要删除服务器绑定「${row.serverName} / ${row.envName}」吗？`, '提示', { type: 'warning' })
+    const id = Number(route.params.id)
+    await deleteProjectDeployServer(id, row.id)
+    ElMessage.success('删除成功')
+    loadDeployServers()
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      console.error('删除部署服务器失败:', error)
+    }
+  }
+}
+
+function resetDeployServerForm() {
+  deployServerForm.serverId = undefined
+  deployServerForm.env = 'test'
+  deployServerForm.deployPath = ''
+}
+
 // ============ 分支策略相关 ============
 
 async function loadPolicies() {
@@ -720,6 +924,11 @@ function resetPolicyForm() {
 watch(activeTab, (tab) => {
   if (tab === 'variables') {
     loadVariables()
+  } else if (tab === 'servers') {
+    loadDeployServers()
+    if (!serverOptions.value.length) {
+      loadServerOptions()
+    }
   } else if (tab === 'policies') {
     loadPolicies()
   }
@@ -740,13 +949,23 @@ function getEnvClass(envCode: string) {
   const map: Record<string, string> = {
     dev: 'status-success',
     test: 'status-warning',
+    pre: 'status-info',
     prod: 'status-danger'
   }
   return map[envCode] || 'status-info'
 }
 
+function getServerStatusType(status?: number) {
+  const map: Record<number, string> = {
+    0: 'danger',
+    1: 'success',
+    2: 'warning'
+  }
+  return status != null ? map[status] || 'info' : 'info'
+}
+
 // 工具函数：获取头像颜色
-function getAvatarColor(userId: number) {
+function getAvatarColor(userId?: number) {
   const colors = [
     'linear-gradient(135deg, #667eea, #764ba2)',
     'linear-gradient(135deg, #409eff, #67c23a)',
@@ -754,12 +973,13 @@ function getAvatarColor(userId: number) {
     'linear-gradient(135deg, #f56c6c, #fab6b6)',
     'linear-gradient(135deg, #909399, #b1b3b8)'
   ]
-  return colors[userId % colors.length]
+  return colors[(userId ?? 0) % colors.length]
 }
 
 onMounted(() => {
   loadProjectDetail()
   loadMembers()
+  loadDeployServers()
 })
 </script>
 
@@ -817,6 +1037,10 @@ onMounted(() => {
 
 .stat-icon.orange {
   background: linear-gradient(135deg, #e6a23c, #ebb563);
+}
+
+.stat-icon.purple {
+  background: linear-gradient(135deg, #8b5cf6, #a78bfa);
 }
 
 .stat-info h3 {

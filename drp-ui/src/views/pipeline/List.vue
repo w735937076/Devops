@@ -200,7 +200,7 @@ async function handleSave() {
       name: pipelineForm.name,
       description: pipelineForm.description,
       timeout: pipelineForm.timeout,
-      stages: JSON.stringify(pipelineForm.stages),
+      stages: pipelineForm.stages,
       status: 1
     }
 

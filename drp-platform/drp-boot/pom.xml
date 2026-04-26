@@ -57,6 +57,11 @@
         </dependency>
         <dependency>
             <groupId>com.drp</groupId>
+            <artifactId>drp-deploy</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.drp</groupId>
             <artifactId>drp-log</artifactId>
             <version>${project.parent.version}</version>
         </dependency>

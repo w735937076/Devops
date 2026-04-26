@@ -131,6 +131,17 @@ import { Edit, Delete, UserFilled } from '@element-plus/icons-vue'
 import { queryUsers, createUser, updateUser, deleteUser, assignUserRoles, type User, type CreateUserRequest, type UpdateUserRequest } from '@/api/user'
 import { getAllRoles, type Role } from '@/api/role'
 
+interface UserFormData extends Partial<CreateUserRequest> {
+  id?: number
+  username: string
+  password: string
+  realName: string
+  email: string
+  phone: string
+  status: number
+  roleIds: number[]
+}
+
 // 表格数据
 const loading = ref(false)
 const tableData = ref<User[]>([])
@@ -149,7 +160,7 @@ const queryParams = reactive({
 const dialogVisible = ref(false)
 const isEdit = ref(false)
 const formRef = ref<FormInstance>()
-const formData = reactive<CreateUserRequest | UpdateUserRequest>({
+const formData = reactive<UserFormData>({
   username: '',
   password: '',
   realName: '',

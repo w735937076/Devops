@@ -4,7 +4,7 @@
  * @author Nick
  */
 
-import request from './request'
+import request, { get } from './request'
 import type { PageResponse } from './request'
 
 // =====================================================
@@ -125,7 +125,7 @@ export function getServerList(params?: ServerQuery) {
  * 获取所有服务器
  */
 export function getServerAll() {
-  return request.get<Server[]>('/servers/all')
+  return get<Server[]>('/servers/all')
 }
 
 /**

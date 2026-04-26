@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.drp.common.util.AesEncryptUtil;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -59,4 +60,26 @@ public class Server {
 
     @TableLogic
     private Boolean deleted;
+
+    public String getDecryptedPassword() {
+        if (password == null || password.isBlank()) {
+            return null;
+        }
+        try {
+            return AesEncryptUtil.decrypt(password);
+        } catch (Exception e) {
+            return password;
+        }
+    }
+
+    public String getDecryptedPrivateKey() {
+        if (privateKey == null || privateKey.isBlank()) {
+            return null;
+        }
+        try {
+            return AesEncryptUtil.decrypt(privateKey);
+        } catch (Exception e) {
+            return privateKey;
+        }
+    }
 }

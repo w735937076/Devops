@@ -11,8 +11,8 @@
  * @author Nick
  */
 
-import axios, { AxiosInstance, AxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import axios, { AxiosHeaders, AxiosInstance, AxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios'
+import { ElMessage } from 'element-plus'
 import router from '@/router'
 
 // =====================================================
@@ -101,6 +101,15 @@ function onTokenRefreshed(token: string) {
   refreshSubscribers = []
 }
 
+function ensureHeaders(config: RequestConfig) {
+  if (!config.headers) {
+    config.headers = new AxiosHeaders()
+  } else if (!(config.headers instanceof AxiosHeaders)) {
+    config.headers = new AxiosHeaders(config.headers as any)
+  }
+  return config.headers
+}
+
 /**
  * 处理 Token 过期
  */
@@ -128,7 +137,7 @@ async function handleTokenExpired(originalConfig: RequestConfig): Promise<any> {
       isRefreshing = false
 
       // 重试原请求
-      originalConfig.headers.set('Authorization', `Bearer ${accessToken}`)
+      ensureHeaders(originalConfig).set('Authorization', `Bearer ${accessToken}`)
       return service(originalConfig)
     } catch (error) {
       isRefreshing = false
@@ -143,7 +152,7 @@ async function handleTokenExpired(originalConfig: RequestConfig): Promise<any> {
     // 正在刷新，返回一个 Promise，等待刷新成功后执行
     return new Promise((resolve) => {
       subscribeTokenRefresh((token: string) => {
-        originalConfig.headers.set('Authorization', `Bearer ${token}`)
+        ensureHeaders(originalConfig).set('Authorization', `Bearer ${token}`)
         resolve(service(originalConfig))
       })
     })

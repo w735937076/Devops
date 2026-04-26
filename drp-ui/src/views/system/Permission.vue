@@ -149,6 +149,20 @@ import {
   type UpdatePermissionRequest
 } from '@/api/permission'
 
+interface PermissionFormData extends Partial<CreatePermissionRequest> {
+  id?: number
+  code: string
+  name: string
+  type: string
+  description: string
+  parentId?: number
+  sort: number
+  icon: string
+  path: string
+  component: string
+  status: number
+}
+
 // 表格数据
 const loading = ref(false)
 const tableData = ref<Permission[]>([])
@@ -180,7 +194,7 @@ const queryParams = reactive({
 const dialogVisible = ref(false)
 const isEdit = ref(false)
 const formRef = ref<FormInstance>()
-const formData = reactive<CreatePermissionRequest | UpdatePermissionRequest>({
+const formData = reactive<PermissionFormData>({
   code: '',
   name: '',
   description: '',

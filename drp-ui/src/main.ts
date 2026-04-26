@@ -38,7 +38,7 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
 app.use(createPinia()) // Pinia 状态管理
 app.use(router) // Vue Router
 app.use(ElementPlus, {
-  locale: zhCn, // 中文语言包
+  locale: zhCn as any, // 中文语言包
   size: 'default' // 默认尺寸
 })
 

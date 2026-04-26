@@ -310,3 +310,47 @@ export function updateBranchPolicy(projectId: number, policyId: number, data: Up
 export function deleteBranchPolicy(projectId: number, policyId: number) {
   return del(`/projects/${projectId}/branch-policies/${policyId}`)
 }
+
+// =====================================================
+// 项目部署服务器绑定
+// =====================================================
+
+export interface ProjectDeployServer {
+  id: number
+  projectId: number
+  serverId: number
+  serverName: string
+  hostname: string
+  port?: number
+  serverEnv?: string
+  serverStatus?: number
+  serverStatusDesc?: string
+  env: 'dev' | 'test' | 'pre' | 'prod'
+  envName: string
+  deployPath: string
+  createTime: string
+}
+
+export interface CreateProjectDeployServerParams {
+  serverId: number
+  env: 'dev' | 'test' | 'pre' | 'prod'
+  deployPath: string
+}
+
+export interface UpdateProjectDeployServerParams extends CreateProjectDeployServerParams {}
+
+export function getProjectDeployServers(projectId: number, env?: string) {
+  return get<ProjectDeployServer[]>(`/projects/${projectId}/deploy-servers`, { env })
+}
+
+export function createProjectDeployServer(projectId: number, data: CreateProjectDeployServerParams) {
+  return post<ProjectDeployServer>(`/projects/${projectId}/deploy-servers`, data)
+}
+
+export function updateProjectDeployServer(projectId: number, bindingId: number, data: UpdateProjectDeployServerParams) {
+  return put<ProjectDeployServer>(`/projects/${projectId}/deploy-servers/${bindingId}`, data)
+}
+
+export function deleteProjectDeployServer(projectId: number, bindingId: number) {
+  return del(`/projects/${projectId}/deploy-servers/${bindingId}`)
+}

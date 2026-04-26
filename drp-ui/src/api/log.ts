@@ -80,6 +80,7 @@ export interface ServerStatus {
   id: number
   name: string
   ip: string
+  hostname?: string
   app: string
   online: boolean
 }
