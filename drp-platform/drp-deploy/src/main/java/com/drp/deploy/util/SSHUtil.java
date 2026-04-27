@@ -50,7 +50,8 @@ public class SSHUtil {
             config.put("ConnectTimeout", String.valueOf(DEFAULT_CONNECT_TIMEOUT_MS));
             session.setConfig(config);
 
-            log.info("建立SSH连接 | server: {}:{}", hostname, sshPort);
+            log.info("\n╔══ SSH EXEC ══════════════════════════════════════════════════════\n║  server : {}:{}\n║  cmd    : {}\n╚══════════════════════════════════════════════════════════════════",
+                    hostname, sshPort, command);
             session.connect(DEFAULT_CONNECT_TIMEOUT_MS);
 
             channel = (com.jcraft.jsch.ChannelExec) session.openChannel("exec");
@@ -92,7 +93,15 @@ public class SSHUtil {
 
             int exitStatus = channel.getExitStatus();
             String stderr = errStream.toString(StandardCharsets.UTF_8);
-            log.info("命令执行完成 | server: {} | exitCode: {}", hostname, exitStatus);
+            String outTrimmed = output.toString().trim();
+            if (exitStatus == 0) {
+                log.info("\n╔══ SSH RESULT ════════════════════════════════════════════════════\n║  server : {}:{}\n║  exit   : {}\n║  output : {}\n╚══════════════════════════════════════════════════════════════════",
+                        hostname, sshPort, exitStatus, outTrimmed.isEmpty() ? "(empty)" : outTrimmed);
+            } else {
+                log.error("\n╔══ SSH FAILED ════════════════════════════════════════════════════\n║  server : {}:{}\n║  exit   : {}\n║  output : {}\n║  stderr : {}\n╚══════════════════════════════════════════════════════════════════",
+                        hostname, sshPort, exitStatus, outTrimmed.isEmpty() ? "(empty)" : outTrimmed,
+                        stderr.isBlank() ? "(empty)" : stderr.trim());
+            }
 
             if (exitStatus != 0) {
                 String detail = output.toString();
@@ -146,6 +155,8 @@ public class SSHUtil {
             config.put("ConnectTimeout", String.valueOf(DEFAULT_CONNECT_TIMEOUT_MS));
             session.setConfig(config);
 
+            log.info("\n╔══ SSH EXEC (silent) ═════════════════════════════════════════════\n║  server : {}:{}\n║  cmd    : {}\n╚══════════════════════════════════════════════════════════════════",
+                    hostname, sshPort, command);
             session.connect(DEFAULT_CONNECT_TIMEOUT_MS);
 
             channel = (com.jcraft.jsch.ChannelExec) session.openChannel("exec");
@@ -167,11 +178,10 @@ public class SSHUtil {
                     }
                 }
                 if (channel.isClosed()) {
-                    while (in.available() > 0) {
-                        int len = in.read(buf);
-                        if (len > 0) {
-                            output.append(new String(buf, 0, len, StandardCharsets.UTF_8));
-                        }
+                    // Blocking drain: in.available() may return 0 even when data is buffered
+                    int len;
+                    while (in.available() > 0 && (len = in.read(buf)) > 0) {
+                        output.append(new String(buf, 0, len, StandardCharsets.UTF_8));
                     }
                     break;
                 }
@@ -181,6 +191,9 @@ public class SSHUtil {
                 Thread.sleep(100);
             }
 
+            String outTrimmed = output.toString().trim();
+            log.info("\n╔══ SSH RESULT (silent) ═══════════════════════════════════════════\n║  server : {}:{}\n║  output : {}\n╚══════════════════════════════════════════════════════════════════",
+                    hostname, sshPort, outTrimmed.isEmpty() ? "(empty)" : outTrimmed);
             return output.toString();
         } catch (Exception e) {
             log.error("远程命令执行异常（静默）| server: {}", hostname, e);

@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -146,21 +145,23 @@ public class DeployExecutor {
     }
 
     private void executeOnServer(DeployRecord record, Server server, String deployPath,
-                                  List<Map<String, Object>> artifacts, String strategy,
-                                  boolean rollbackMode, Project project, BuildRecord build) {
+                                 List<Map<String, Object>> artifacts, String strategy,
+                                 boolean rollbackMode, Project project, BuildRecord build) {
         String stepName = rollbackMode ? "回滚" : "部署";
         String log = record.getLogContent();
 
-        log = appendLog(log, "[SERVER:" + server.getHostname() + "] ====== " + stepName + "开始 ======");
+        log = appendStep(log, server.getHostname(), "====== " + stepName + " 开始 ======");
         deployRecordRepository.updateById(record);
 
-        log = appendLog(log, "[SERVER:" + server.getHostname() + "] 步骤1/5: 检查目标目录");
+        log = appendStep(log, server.getHostname(), "步骤 1/5 » 检查目标目录");
+        record.setLogContent(log);
         deployRecordRepository.updateById(record);
         sshUtil.executeCommand(server.getHostname(), server.getPort(), server.getUsername(),
                 server.getDecryptedPassword(), server.getDecryptedPrivateKey(), server.getPrivateKeyPassphrase(),
                 "mkdir -p " + deployPath + " && echo 'DIR_OK'");
 
-        log = appendLog(log, "[SERVER:" + server.getHostname() + "] 步骤2/5: 备份旧版本");
+        log = appendStep(log, server.getHostname(), "步骤 2/5 » 备份旧版本");
+        record.setLogContent(log);
         deployRecordRepository.updateById(record);
         if (!rollbackMode) {
             String backupCmd = String.format(
@@ -174,11 +175,12 @@ public class DeployExecutor {
             String backupResult = sshUtil.executeCommand(server.getHostname(), server.getPort(),
                     server.getUsername(), server.getDecryptedPassword(), server.getDecryptedPrivateKey(),
                     server.getPrivateKeyPassphrase(), backupCmd, 120);
-            log = appendLog(log, "[SERVER:" + server.getHostname() + "] 备份结果: " + backupResult);
+            log = appendLog(log, "  备份结果: " + backupResult.trim());
             deployRecordRepository.updateById(record);
         }
 
-        log = appendLog(log, "[SERVER:" + server.getHostname() + "] 步骤3/5: 上传制品");
+        log = appendStep(log, server.getHostname(), "步骤 3/5 » 上传制品");
+        record.setLogContent(log);
         deployRecordRepository.updateById(record);
 
         String uploadsDir = deployPath + "/uploads";
@@ -197,43 +199,48 @@ public class DeployExecutor {
                 if (!localFile.exists() || !localFile.isFile()) {
                     throw new BusinessException("制品文件不存在: " + pathObj);
                 }
-                log = appendLog(log, "[SERVER:" + server.getHostname() + "] SFTP上传: " + localFile.getName() + " (" + localFile.length() / 1024 + " KB)");
+                log = appendLog(log, "  SFTP上传: " + localFile.getName() + " (" + localFile.length() / 1024 + " KB) → " + uploadsDir + "/" + targetName);
+                record.setLogContent(log);
                 deployRecordRepository.updateById(record);
                 sshUtil.uploadFile(server.getHostname(), server.getPort(),
                         server.getUsername(), server.getDecryptedPassword(),
                         server.getDecryptedPrivateKey(), server.getPrivateKeyPassphrase(),
                         localFile.getAbsolutePath(), uploadsDir, targetName);
-                log = appendLog(log, "[SERVER:" + server.getHostname() + "] SFTP上传完成: " + targetName);
+                log = appendLog(log, "  SFTP上传完成 ✓ " + targetName);
             } else {
                 // Explicit external download URL — let the remote server pull it via curl
                 String downloadUrl = downloadUrlObj.toString();
                 if (!downloadUrl.startsWith("http://") && !downloadUrl.startsWith("https://") && !downloadUrl.startsWith("ftp://")) {
                     downloadUrl = guessArtifactBaseUrl() + downloadUrl;
                 }
-                log = appendLog(log, "[SERVER:" + server.getHostname() + "] 制品URL下载: " + downloadUrl);
+                log = appendLog(log, "  制品URL下载: " + downloadUrl);
+                record.setLogContent(log);
                 deployRecordRepository.updateById(record);
                 String dlResult = sshUtil.downloadArtifact(
                         server.getHostname(), server.getPort(),
                         server.getUsername(), server.getDecryptedPassword(),
                         server.getDecryptedPrivateKey(), server.getPrivateKeyPassphrase(),
                         downloadUrl, uploadsDir, targetName);
-                log = appendLog(log, "[SERVER:" + server.getHostname() + "] URL下载完成: " + dlResult);
+                log = appendLog(log, "  URL下载完成 ✓ " + dlResult.trim());
             }
             deployRecordRepository.updateById(record);
         }
 
-        log = appendLog(log, "[SERVER:" + server.getHostname() + "] 步骤4/5: 切换版本 (" + displayStrategy(strategy) + ")");
+        log = appendStep(log, server.getHostname(), "步骤 4/5 » 切换版本 (" + displayStrategy(strategy) + ")");
+        record.setLogContent(log);
         deployRecordRepository.updateById(record);
         String switchResult = executeStrategySwitch(server, deployPath, strategy, rollbackMode, project);
-        log = appendLog(log, "[SERVER:" + server.getHostname() + "] 策略切换: " + switchResult);
+        log = appendLog(log, "  策略切换结果: " + switchResult.trim());
+        record.setLogContent(log);
         deployRecordRepository.updateById(record);
 
-        log = appendLog(log, "[SERVER:" + server.getHostname() + "] 步骤5/5: 重启服务");
+        log = appendStep(log, server.getHostname(), "步骤 5/5 » 重启服务");
+        record.setLogContent(log);
         deployRecordRepository.updateById(record);
         String restartResult = restartService(server, project, deployPath);
-        log = appendLog(log, "[SERVER:" + server.getHostname() + "] 服务重启: " + restartResult);
+        log = appendLog(log, "  服务重启结果: " + restartResult.trim());
 
-        log = appendLog(log, "[SERVER:" + server.getHostname() + "] ====== " + stepName + "完成 ======");
+        log = appendStep(log, server.getHostname(), "====== " + stepName + " 完成 ======");
         record.setLogContent(log);
         deployRecordRepository.updateById(record);
     }
@@ -274,17 +281,25 @@ public class DeployExecutor {
 
     private String restartService(Server server, Project project, String deployPath) {
         String serviceName = project.getName().replace("-", "").toLowerCase();
+        // Source login profiles so JAVA_HOME / PATH are available (JSch exec runs a non-login shell)
+        String sourceEnv = ". /etc/profile 2>/dev/null; [ -f ~/.bash_profile ] && . ~/.bash_profile 2>/dev/null; [ -f ~/.bashrc ] && . ~/.bashrc 2>/dev/null; ";
+        // Use ';' (not '&&') between stop and start so that stop failing (not running) never blocks start
+        // Do NOT redirect start output to /dev/null — keep it visible for diagnosis
         String restartCmd = String.format(
-                "if systemctl is-active --quiet %s; then " +
-                        "systemctl restart %s && echo 'RESTART_OK:%s'; " +
-                        "elif supervisorctl status %s | grep -q RUNNING; then " +
-                        "supervisorctl restart %s && echo 'RESTART_OK:%s'; " +
-                        "elif [ -f %s/start.sh ]; then " +
-                        "%s/start.sh && echo 'RESTART_OK:start_script'; " +
-                        "else echo 'RESTART_NO_MANAGER'; fi",
+                sourceEnv +
+                "if systemctl cat %s >/dev/null 2>&1; then " +
+                        "systemctl stop %s 2>/dev/null; systemctl start %s && echo 'RESTART_OK:systemd'; " +
+                "elif command -v supervisorctl >/dev/null 2>&1 && supervisorctl status %s >/dev/null 2>&1; then " +
+                        "supervisorctl stop %s 2>/dev/null; supervisorctl start %s && echo 'RESTART_OK:supervisor'; " +
+                "elif [ -f %s/current/start.sh ]; then " +
+                        "sh %s/current/start.sh stop 2>/dev/null; sh %s/current/start.sh start && echo 'RESTART_OK:start_script' || echo 'RESTART_FAILED:start_script'; " +
+                "elif [ -f %s/start.sh ]; then " +
+                        "sh %s/start.sh stop 2>/dev/null; sh %s/start.sh start && echo 'RESTART_OK:start_script' || echo 'RESTART_FAILED:start_script'; " +
+                "else echo 'RESTART_NO_MANAGER'; fi",
                 serviceName, serviceName, serviceName,
                 serviceName, serviceName, serviceName,
-                deployPath, deployPath);
+                deployPath, deployPath, deployPath,
+                deployPath, deployPath, deployPath);
         return sshUtil.executeCommand(server.getHostname(), server.getPort(),
                 server.getUsername(), server.getDecryptedPassword(), server.getDecryptedPrivateKey(),
                 server.getPrivateKeyPassphrase(), restartCmd, 60);
@@ -316,8 +331,9 @@ public class DeployExecutor {
             String portResult = sshUtil.executeCommandSilently(server.getHostname(), server.getPort(),
                     server.getUsername(), server.getDecryptedPassword(), server.getDecryptedPrivateKey(),
                     server.getPrivateKeyPassphrase(),
-                    "ss -tlnp 2>/dev/null | grep ': " + port + " ' || netstat -tlnp 2>/dev/null | grep ': " + port + " ' || echo 'PORT_NOT_LISTENING'",
+                    "(/usr/sbin/ss -tlnp 2>/dev/null || netstat -tlnp 2>/dev/null) | grep -E ':" + port + "(\\s|$)' || echo 'PORT_NOT_LISTENING'",
                     10);
+            log.info("端口检测 | server={} port={} result={}", server.getHostname(), port, portResult);
             boolean portOk = !portResult.contains("PORT_NOT_LISTENING") && !portResult.trim().isEmpty();
             portCheck.setStatus(portOk ? "PASS" : "FAIL");
             portCheck.setMessage(portOk ? "端口 " + port + " 监听正常" : "端口 " + port + " 未监听");
@@ -368,8 +384,17 @@ public class DeployExecutor {
         return dto;
     }
 
-    private String appendLog(String log, String line) {
-        return (log != null ? log : "") + line + "\n";
+    private String appendLog(String existing, String line) {
+        return (existing != null ? existing : "") + line + "\n";
+    }
+
+    private String appendStep(String existing, String server, String step) {
+        String banner = "┌─────────────────────────────────────────────────────────────\n"
+                + "│  " + step + "\n"
+                + "│  server: " + server + "\n"
+                + "└─────────────────────────────────────────────────────────────";
+        log.info("\n{}", banner);
+        return appendLog(existing, banner);
     }
 
     private String toJson(Object obj) {
