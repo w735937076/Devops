@@ -26,6 +26,11 @@ import org.springframework.util.StringUtils;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
@@ -308,6 +313,10 @@ public class DeployExecutor {
     private List<DeployCheckItemDTO> performHealthCheck(DeployRecord record, List<DeployServerDTO> servers) {
         List<DeployCheckItemDTO> checks = new ArrayList<>();
         Project project = projectRepository.selectById(record.getProjectId());
+        log.info("========== 健康检查开始 | 项目={} 环境={} 服务器数={} ==========",
+                project != null ? project.getName() : "unknown",
+                record.getEnv(),
+                servers.size());
 
         for (DeployServerDTO serverDto : servers) {
             Server server = serverRepository.selectById(serverDto.getId());
@@ -323,46 +332,14 @@ public class DeployExecutor {
             if (binding == null) continue;
 
             String deployPath = binding.getDeployPath();
-
-            DeployCheckItemDTO portCheck = new DeployCheckItemDTO();
-            portCheck.setKey("health_port_" + server.getHostname());
-            portCheck.setName("端口检测 [" + server.getHostname() + "]");
             int port = guessAppPort(project, deployPath);
-            String portResult = sshUtil.executeCommandSilently(server.getHostname(), server.getPort(),
-                    server.getUsername(), server.getDecryptedPassword(), server.getDecryptedPrivateKey(),
-                    server.getPrivateKeyPassphrase(),
-                    "(/usr/sbin/ss -tlnp 2>/dev/null || netstat -tlnp 2>/dev/null) | grep -E ':" + port + "(\\s|$)' || echo 'PORT_NOT_LISTENING'",
-                    10);
-            log.info("端口检测 | server={} port={} result={}", server.getHostname(), port, portResult);
-            boolean portOk = !portResult.contains("PORT_NOT_LISTENING") && !portResult.trim().isEmpty();
-            portCheck.setStatus(portOk ? "PASS" : "FAIL");
-            portCheck.setMessage(portOk ? "端口 " + port + " 监听正常" : "端口 " + port + " 未监听");
-            checks.add(portCheck);
-
-            DeployCheckItemDTO procCheck = new DeployCheckItemDTO();
-            procCheck.setKey("health_process_" + server.getHostname());
-            procCheck.setName("进程检测 [" + server.getHostname() + "]");
-            String procResult = sshUtil.executeCommandSilently(server.getHostname(), server.getPort(),
-                    server.getUsername(), server.getDecryptedPassword(), server.getDecryptedPrivateKey(),
-                    server.getPrivateKeyPassphrase(),
-                    "pgrep -f '" + project.getName() + "' || echo 'PROCESS_NOT_FOUND'",
-                    10);
-            boolean procOk = !procResult.contains("PROCESS_NOT_FOUND") && !procResult.trim().isEmpty();
-            procCheck.setStatus(procOk ? "PASS" : "WARNING");
-            procCheck.setMessage(procOk ? "进程运行中" : "进程未找到（可能未启动）");
-            checks.add(procCheck);
 
             DeployCheckItemDTO httpCheck = new DeployCheckItemDTO();
             httpCheck.setKey("health_http_" + server.getHostname());
-            httpCheck.setName("HTTP探活 [" + server.getHostname() + "]");
+            httpCheck.setName("HTTP探活 [" + server.getHostname() + ":" + port + "]");
             String healthUrl = guessHealthUrl(project, server.getHostname(), port);
             if (healthUrl != null) {
-                String httpResult = sshUtil.executeCommandSilently(server.getHostname(), server.getPort(),
-                        server.getUsername(), server.getDecryptedPassword(), server.getDecryptedPrivateKey(),
-                        server.getPrivateKeyPassphrase(),
-                        "curl -sf " + healthUrl + " || echo 'HTTP_DOWN'",
-                        15);
-                boolean httpOk = !httpResult.contains("HTTP_DOWN") && !httpResult.trim().isEmpty();
+                boolean httpOk = doHttpHealthCheck(healthUrl, 15);
                 httpCheck.setStatus(httpOk ? "PASS" : "WARNING");
                 httpCheck.setMessage(httpOk ? "HTTP响应正常" : "HTTP探活失败（服务可能仍在启动）");
             } else {
@@ -472,5 +449,58 @@ public class DeployExecutor {
             path = "/actuator/health";
         }
         return "http://" + hostname + ":" + port + path;
+    }
+
+    private boolean doHttpHealthCheck(String url, int timeoutSeconds) {
+        int maxRetries = 5;
+        for (int n = 1; n <= maxRetries; n++) {
+            long start = System.currentTimeMillis();
+            try {
+                HttpClient client = HttpClient.newBuilder()
+                        .connectTimeout(Duration.ofSeconds(timeoutSeconds))
+                        .build();
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(url))
+                        .timeout(Duration.ofSeconds(timeoutSeconds))
+                        .header("User-Agent", "DRP-Deploy-HealthCheck/1.0")
+                        .GET()
+                        .build();
+                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                long elapsed = System.currentTimeMillis() - start;
+                int statusCode = response.statusCode();
+                String body = response.body();
+                if (body != null && body.length() > 200) {
+                    body = body.substring(0, 200) + "...(truncated)";
+                }
+                log.info("HTTP健康检查 | 第{}次 | URL={} | 状态码={} | 耗时={}ms | 响应体={}",
+                        n, url, statusCode, elapsed, body);
+                if (statusCode >= 200 && statusCode < 500) {
+                    return true;
+                }
+                log.warn("HTTP健康检查 | 第{}次 | 状态码异常={}，{}秒后重试",
+                        n, statusCode, 2 * n + 1);
+            } catch (java.net.http.HttpConnectTimeoutException e) {
+                log.warn("HTTP健康检查 | 第{}次 | 连接超时 | URL={} | {}秒后重试",
+                        n, url, 2 * n + 1);
+            } catch (java.net.http.HttpTimeoutException e) {
+                log.warn("HTTP健康检查 | 第{}次 | 响应超时 | URL={} | {}秒后重试",
+                        n, url, 2 * n + 1);
+            } catch (Exception e) {
+                log.warn("HTTP健康检查 | 第{}次 | 异常={} | URL={} | {}秒后重试",
+                        n, e.getMessage(), url, 2 * n + 1);
+            }
+
+            if (n < maxRetries) {
+                try {
+                    Thread.sleep((2L * n + 1) * 1000);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    log.warn("HTTP健康检查重试被中断 | URL={}", url);
+                    return false;
+                }
+            }
+        }
+        log.error("HTTP健康检查 | 全部{}次重试失败 | URL={}", maxRetries, url);
+        return false;
     }
 }
