@@ -153,42 +153,57 @@ public class DeployExecutor {
                                  List<Map<String, Object>> artifacts, String strategy,
                                  boolean rollbackMode, Project project, BuildRecord build) {
         String stepName = rollbackMode ? "回滚" : "部署";
+        String host = server.getHostname();
+        String user = server.getUsername();
+        String pwd = server.getDecryptedPassword();
+        String key = server.getDecryptedPrivateKey();
+        String pp = server.getPrivateKeyPassphrase();
+        int port = server.getPort() != null && server.getPort() > 0 ? server.getPort() : 22;
+
         String log = record.getLogContent();
-
-        log = appendStep(log, server.getHostname(), "====== " + stepName + " 开始 ======");
-        deployRecordRepository.updateById(record);
-
-        log = appendStep(log, server.getHostname(), "步骤 1/5 » 检查目标目录");
+        log = appendStep(log, host, "====== " + stepName + " 开始 ======");
         record.setLogContent(log);
         deployRecordRepository.updateById(record);
-        sshUtil.executeCommand(server.getHostname(), server.getPort(), server.getUsername(),
-                server.getDecryptedPassword(), server.getDecryptedPrivateKey(), server.getPrivateKeyPassphrase(),
-                "mkdir -p " + deployPath + " && echo 'DIR_OK'");
 
-        log = appendStep(log, server.getHostname(), "步骤 2/5 » 备份旧版本");
+        log = appendStep(log, host, "步骤 1/5 » 准备目标目录");
+        record.setLogContent(log);
+        deployRecordRepository.updateById(record);
+        sshUtil.createDirectories(host, port, user, pwd, key, pp, deployPath);
+        log = appendLog(log, "  目标目录就绪: " + deployPath);
+
+        log = appendStep(log, host, "步骤 2/5 » 记录当前版本");
         record.setLogContent(log);
         deployRecordRepository.updateById(record);
         if (!rollbackMode) {
-            String backupCmd = String.format(
-                    "if [ -f %s/current ]; then " +
-                            "BACKUP_DIR=%s/backup_$(date +%%Y%%m%%d_%%H%%M%%S); " +
-                            "mkdir -p $BACKUP_DIR; " +
-                            "cp -r %s/current/* $BACKUP_DIR/ 2>/dev/null; " +
-                            "echo 'BACKUP_OK:$BACKUP_DIR'; " +
-                            "else echo 'BACKUP_SKIP'; fi",
-                    deployPath, deployPath, deployPath);
-            String backupResult = sshUtil.executeCommand(server.getHostname(), server.getPort(),
-                    server.getUsername(), server.getDecryptedPassword(), server.getDecryptedPrivateKey(),
-                    server.getPrivateKeyPassphrase(), backupCmd, 120);
-            log = appendLog(log, "  备份结果: " + backupResult.trim());
-            deployRecordRepository.updateById(record);
+            String previousVersion = sshUtil.readSymlink(host, port, user, pwd, key, pp, deployPath + "/current");
+            log = appendLog(log, "  当前版本: " + (previousVersion != null ? previousVersion : "(无)"));
+        } else {
+            log = appendLog(log, "  回滚模式，跳过版本记录");
         }
-
-        log = appendStep(log, server.getHostname(), "步骤 3/5 » 上传制品");
         record.setLogContent(log);
         deployRecordRepository.updateById(record);
 
-        String uploadsDir = deployPath + "/uploads";
+        log = appendStep(log, host, "步骤 3/5 » 上传制品");
+        record.setLogContent(log);
+        deployRecordRepository.updateById(record);
+
+        String versionDir;
+        if ("BLUE_GREEN".equals(strategy)) {
+            String currentColor = detectCurrentColor(server, deployPath);
+            String newColor = "blue".equals(currentColor) ? "green" : "blue";
+            versionDir = deployPath + "/" + newColor;
+        } else if ("GRAY".equals(strategy)) {
+            versionDir = deployPath + "/gray";
+        } else {
+            String ts = java.time.LocalDateTime.now()
+                    .format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+            versionDir = deployPath + "/v_" + ts;
+        }
+
+        sshUtil.createDirectories(host, port, user, pwd, key, pp, versionDir);
+        log = appendLog(log, "  版本目录: " + versionDir);
+        record.setLogContent(log);
+        deployRecordRepository.updateById(record);
 
         for (Map<String, Object> artifact : artifacts) {
             String artifactName = (String) artifact.get("name");
@@ -196,115 +211,146 @@ public class DeployExecutor {
             Object downloadUrlObj = artifact.get("downloadUrl");
             if (pathObj == null && downloadUrlObj == null) continue;
 
-            String targetName = artifactName != null ? artifactName : "app";
+            String targetName = resolveTargetName(artifactName, pathObj, downloadUrlObj);
 
             if (pathObj != null) {
-                // Local file path — push directly via SFTP (no HTTP server exposure needed)
                 java.io.File localFile = new java.io.File(pathObj.toString());
                 if (!localFile.exists() || !localFile.isFile()) {
                     throw new BusinessException("制品文件不存在: " + pathObj);
                 }
-                log = appendLog(log, "  SFTP上传: " + localFile.getName() + " (" + localFile.length() / 1024 + " KB) → " + uploadsDir + "/" + targetName);
+                log = appendLog(log, "  SFTP上传: " + localFile.getName()
+                        + " (" + localFile.length() / 1024 + " KB) → " + versionDir);
                 record.setLogContent(log);
                 deployRecordRepository.updateById(record);
-                sshUtil.uploadFile(server.getHostname(), server.getPort(),
-                        server.getUsername(), server.getDecryptedPassword(),
-                        server.getDecryptedPrivateKey(), server.getPrivateKeyPassphrase(),
-                        localFile.getAbsolutePath(), uploadsDir, targetName);
-                log = appendLog(log, "  SFTP上传完成 ✓ " + targetName);
+                sshUtil.uploadFile(host, port, user, pwd, key, pp,
+                        localFile.getAbsolutePath(), versionDir, targetName);
+                log = appendLog(log, "  上传完成 ✓ " + targetName);
             } else {
-                // Explicit external download URL — let the remote server pull it via curl
                 String downloadUrl = downloadUrlObj.toString();
-                if (!downloadUrl.startsWith("http://") && !downloadUrl.startsWith("https://") && !downloadUrl.startsWith("ftp://")) {
+                if (!downloadUrl.startsWith("http://") && !downloadUrl.startsWith("https://")
+                        && !downloadUrl.startsWith("ftp://")) {
                     downloadUrl = guessArtifactBaseUrl() + downloadUrl;
                 }
-                log = appendLog(log, "  制品URL下载: " + downloadUrl);
+                log = appendLog(log, "  HTTP下载+SFTP上传: " + downloadUrl);
                 record.setLogContent(log);
                 deployRecordRepository.updateById(record);
-                String dlResult = sshUtil.downloadArtifact(
-                        server.getHostname(), server.getPort(),
-                        server.getUsername(), server.getDecryptedPassword(),
-                        server.getDecryptedPrivateKey(), server.getPrivateKeyPassphrase(),
-                        downloadUrl, uploadsDir, targetName);
-                log = appendLog(log, "  URL下载完成 ✓ " + dlResult.trim());
+                String dlResult = sshUtil.downloadAndUploadArtifact(
+                        host, port, user, pwd, key, pp,
+                        downloadUrl, versionDir, targetName);
+                log = appendLog(log, "  上传完成 ✓ " + dlResult);
             }
+            record.setLogContent(log);
             deployRecordRepository.updateById(record);
         }
 
-        log = appendStep(log, server.getHostname(), "步骤 4/5 » 切换版本 (" + displayStrategy(strategy) + ")");
+        log = appendStep(log, host, "步骤 4/5 » 切换版本 (" + displayStrategy(strategy) + ")");
         record.setLogContent(log);
         deployRecordRepository.updateById(record);
-        String switchResult = executeStrategySwitch(server, deployPath, strategy, rollbackMode, project);
-        log = appendLog(log, "  策略切换结果: " + switchResult.trim());
+        sshUtil.createOrUpdateSymlink(host, port, user, pwd, key, pp,
+                versionDir, deployPath + "/current");
+        log = appendLog(log, "  符号链接已更新: current → " + versionDir);
         record.setLogContent(log);
         deployRecordRepository.updateById(record);
 
-        log = appendStep(log, server.getHostname(), "步骤 5/5 » 重启服务");
+        log = appendStep(log, host, "步骤 5/5 » 重启服务");
         record.setLogContent(log);
         deployRecordRepository.updateById(record);
         String restartResult = restartService(server, project, deployPath);
         log = appendLog(log, "  服务重启结果: " + restartResult.trim());
 
-        log = appendStep(log, server.getHostname(), "====== " + stepName + " 完成 ======");
+        log = appendStep(log, host, "====== " + stepName + " 完成 ======");
         record.setLogContent(log);
         deployRecordRepository.updateById(record);
     }
 
-    private String executeStrategySwitch(Server server, String deployPath, String strategy, boolean rollbackMode, Project project) {
-        String appName = project.getName();
-        String strategyCmd;
-        if ("BLUE_GREEN".equals(strategy)) {
-            String color = detectCurrentColor(deployPath);
-            String newColor = "blue".equals(color) ? "green" : "blue";
-            strategyCmd = String.format(
-                    "cd %s && " +
-                            "mkdir -p %s/%s && " +
-                            "cp -r %s/uploads/* %s/%s/ && " +
-                            "ln -snf %s/%s current && " +
-                            "echo 'BLUE_GREEN_SWITCH:%s'",
-                    deployPath, deployPath, newColor, deployPath, deployPath, newColor, deployPath, newColor, newColor);
-        } else if ("GRAY".equals(strategy)) {
-            strategyCmd = String.format(
-                    "cd %s && " +
-                            "mkdir -p %s/gray && " +
-                            "cp -r %s/uploads/* %s/gray/ && " +
-                            "ln -snf %s/gray current && " +
-                            "echo 'GRAY_SWITCH:gray'",
-                    deployPath, deployPath, deployPath, deployPath, deployPath);
-        } else {
-            strategyCmd = String.format(
-                    "cd %s && " +
-                            "cp -r %s/uploads/* %s/current/ 2>/dev/null || mkdir -p %s/current && " +
-                            "cp -r %s/uploads/* %s/current/ && " +
-                            "echo 'SINGLE_SWITCH:OK'",
-                    deployPath, deployPath, deployPath, deployPath, deployPath, deployPath);
+    private String resolveTargetName(String artifactName, Object pathObj, Object downloadUrlObj) {
+        String normalizedName = artifactName != null ? artifactName.replace("\\", "/") : "";
+        if (normalizedName.contains("/")) {
+            return trimLeadingSlash(normalizedName);
         }
-        return sshUtil.executeCommand(server.getHostname(), server.getPort(),
-                server.getUsername(), server.getDecryptedPassword(), server.getDecryptedPrivateKey(),
-                server.getPrivateKeyPassphrase(), strategyCmd, 60);
+
+        String fullPath = null;
+        if (pathObj != null) {
+            fullPath = pathObj.toString().replace("\\", "/");
+        } else if (downloadUrlObj != null) {
+            fullPath = extractPathFromUrl(downloadUrlObj.toString());
+        }
+
+        if (fullPath != null) {
+            String relative = extractRelativeFromBuildPath(fullPath);
+            if (relative != null) {
+                return trimLeadingSlash(relative);
+            }
+            String fileName = fullPath.substring(fullPath.lastIndexOf('/') + 1);
+            if (!fileName.isBlank()) {
+                return fileName;
+            }
+        }
+
+        if (!normalizedName.isBlank()) {
+            return trimLeadingSlash(normalizedName);
+        }
+        return "app";
+    }
+
+    private String extractPathFromUrl(String url) {
+        try {
+            String path = URI.create(url).getPath();
+            if (path != null && !path.isBlank()) {
+                return path;
+            }
+        } catch (Exception ignored) {
+        }
+        return url.contains("/") ? url : null;
+    }
+
+    private String extractRelativeFromBuildPath(String fullPath) {
+        for (String marker : new String[]{"/dist/", "/build/", "/output/", "/target/classes/"}) {
+            int idx = fullPath.indexOf(marker);
+            if (idx >= 0) {
+                String relative = fullPath.substring(idx + marker.length());
+                if (!relative.isBlank()) {
+                    return relative;
+                }
+            }
+        }
+        return null;
+    }
+
+    private String trimLeadingSlash(String path) {
+        String result = path;
+        while (result.startsWith("/")) {
+            result = result.substring(1);
+        }
+        return result;
+    }
+
+    /**
+     * @deprecated 策略切换已通过 SFTP 协议操作实现（createOrUpdateSymlink），不再使用 shell 命令。
+     *             保留此方法供回滚场景扩展使用。
+     */
+    @Deprecated
+    private String executeStrategySwitch(Server server, String deployPath, String strategy, boolean rollbackMode, Project project) {
+        throw new UnsupportedOperationException("策略切换已迁移至 SFTP 协议操作，请使用 createOrUpdateSymlink");
     }
 
     private String restartService(Server server, Project project, String deployPath) {
         String serviceName = project.getName().replace("-", "").toLowerCase();
-        // Source login profiles so JAVA_HOME / PATH are available (JSch exec runs a non-login shell)
-        String sourceEnv = ". /etc/profile 2>/dev/null; [ -f ~/.bash_profile ] && . ~/.bash_profile 2>/dev/null; [ -f ~/.bashrc ] && . ~/.bashrc 2>/dev/null; ";
-        // Use ';' (not '&&') between stop and start so that stop failing (not running) never blocks start
-        // Do NOT redirect start output to /dev/null — keep it visible for diagnosis
-        String restartCmd = String.format(
-                sourceEnv +
-                "if systemctl cat %s >/dev/null 2>&1; then " +
-                        "systemctl stop %s 2>/dev/null; systemctl start %s && echo 'RESTART_OK:systemd'; " +
-                "elif command -v supervisorctl >/dev/null 2>&1 && supervisorctl status %s >/dev/null 2>&1; then " +
-                        "supervisorctl stop %s 2>/dev/null; supervisorctl start %s && echo 'RESTART_OK:supervisor'; " +
-                "elif [ -f %s/current/start.sh ]; then " +
-                        "sh %s/current/start.sh stop 2>/dev/null; sh %s/current/start.sh start && echo 'RESTART_OK:start_script' || echo 'RESTART_FAILED:start_script'; " +
-                "elif [ -f %s/start.sh ]; then " +
-                        "sh %s/start.sh stop 2>/dev/null; sh %s/start.sh start && echo 'RESTART_OK:start_script' || echo 'RESTART_FAILED:start_script'; " +
-                "else echo 'RESTART_NO_MANAGER'; fi",
-                serviceName, serviceName, serviceName,
-                serviceName, serviceName, serviceName,
-                deployPath, deployPath, deployPath,
-                deployPath, deployPath, deployPath);
+        // Source login profiles so JAVA_HOME / PATH are available (SSH exec runs a non-login shell)
+        String sourceEnv = ". /etc/profile 2>/dev/null; "
+                + "[ -f ~/.bash_profile ] && . ~/.bash_profile 2>/dev/null; "
+                + "[ -f ~/.bashrc ] && . ~/.bashrc 2>/dev/null; ";
+        // Use 'restart' (not 'stop; start') so that stop-failure never blocks start
+        String restartCmd = sourceEnv
+                + "if systemctl cat " + serviceName + " >/dev/null 2>&1; then "
+                + "systemctl restart " + serviceName + " && echo 'RESTART_OK:systemd'; "
+                + "elif command -v supervisorctl >/dev/null 2>&1 && supervisorctl status " + serviceName + " >/dev/null 2>&1; then "
+                + "supervisorctl restart " + serviceName + " && echo 'RESTART_OK:supervisor'; "
+                + "elif [ -f " + deployPath + "/current/start.sh ]; then "
+                + "sh " + deployPath + "/current/start.sh restart && echo 'RESTART_OK:start_script' || echo 'RESTART_FAILED:start_script'; "
+                + "elif [ -f " + deployPath + "/start.sh ]; then "
+                + "sh " + deployPath + "/start.sh restart && echo 'RESTART_OK:start_script' || echo 'RESTART_FAILED:start_script'; "
+                + "else echo 'RESTART_NO_MANAGER'; fi";
         return sshUtil.executeCommand(server.getHostname(), server.getPort(),
                 server.getUsername(), server.getDecryptedPassword(), server.getDecryptedPrivateKey(),
                 server.getPrivateKeyPassphrase(), restartCmd, 60);
@@ -435,7 +481,15 @@ public class DeployExecutor {
         };
     }
 
-    private String detectCurrentColor(String deployPath) {
+    private String detectCurrentColor(Server server, String deployPath) {
+        String target = sshUtil.readSymlink(server.getHostname(), server.getPort(),
+                server.getUsername(), server.getDecryptedPassword(),
+                server.getDecryptedPrivateKey(), server.getPrivateKeyPassphrase(),
+                deployPath + "/current");
+        if (target != null) {
+            if (target.contains("/blue") || target.endsWith("blue")) return "blue";
+            if (target.contains("/green") || target.endsWith("green")) return "green";
+        }
         return "blue";
     }
 

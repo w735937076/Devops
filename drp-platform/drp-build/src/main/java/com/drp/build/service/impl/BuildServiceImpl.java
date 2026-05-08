@@ -310,13 +310,13 @@ public class BuildServiceImpl implements BuildService {
                 java.io.File distDir = new java.io.File(workDir, "dist");
                 log.info("查找 Node 产物 | distDir: {} | exists: {}", distDir.getAbsolutePath(), distDir.exists());
                 if (distDir.exists()) {
-                    findAllFiles(distDir, artifactList, now);
+                    findAllFiles(distDir, distDir, artifactList, now);
                 }
             } else if ("PYTHON".equals(project.getType())) {
                 java.io.File distDir = new java.io.File(workDir, "dist");
                 log.info("查找 Python 产物 | distDir: {} | exists: {}", distDir.getAbsolutePath(), distDir.exists());
                 if (distDir.exists()) {
-                    findAllFiles(distDir, artifactList, now);
+                    findAllFiles(distDir, distDir, artifactList, now);
                 }
             }
 
@@ -361,16 +361,19 @@ public class BuildServiceImpl implements BuildService {
         }
     }
 
-    private void findAllFiles(java.io.File dir, java.util.List<ArtifactDTO> artifactList, java.time.LocalDateTime createTime) {
+    private void findAllFiles(java.io.File rootDir, java.io.File dir, java.util.List<ArtifactDTO> artifactList, java.time.LocalDateTime createTime) {
         if (dir == null || !dir.exists()) return;
         java.io.File[] files = dir.listFiles();
         if (files == null) return;
         for (java.io.File file : files) {
             if (file.isDirectory()) {
-                findAllFiles(file, artifactList, createTime);
+                findAllFiles(rootDir, file, artifactList, createTime);
             } else {
                 ArtifactDTO artifact = new ArtifactDTO();
-                artifact.setName(file.getName());
+                java.nio.file.Path root = rootDir.toPath();
+                java.nio.file.Path current = file.toPath();
+                String relative = root.relativize(current).toString().replace("\\", "/");
+                artifact.setName(relative);
                 artifact.setPath(file.getAbsolutePath());
                 artifact.setSize(file.length());
                 artifact.setCreateTime(createTime);
